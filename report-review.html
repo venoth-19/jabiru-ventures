@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Jabiru Ventures — Report Review</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -228,6 +230,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-he
 
 <div class="bottom-bar">
   <button class="back-link" onclick="window.location.href='index.html'">← CRM</button>
+  <button onclick="printReport()" style="padding:14px 12px;background:rgba(107,80,214,.1);color:#6B50D6;border:1px solid rgba(107,80,214,.2);border-radius:var(--r-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">🖨️ PDF</button>
   <button class="approve-btn" id="approve-btn" onclick="approveReport()">✓ Approve Report</button>
   <button class="send-btn" id="send-btn" onclick="sendReport()">📤 Send Report</button>
 </div>
@@ -252,9 +255,9 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-he
 <div class="toast" id="toast"></div>
 
 <script>
-const SUPABASE_URL      = 'https://siglqixiefvrxfvpxttj.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_3LA7_L8nCwysXKAI7-0Faw_v6m7iTL_';
-const CLAUDE_API_KEY    = 'YOUR_CLAUDE_API_KEY';
+
+
+
 
 const SECTIONS = [
   { id:'summary',         label:'Summary',          icon:'📋' },
@@ -822,6 +825,46 @@ function showToast(msg) {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
+
+function printReport() {
+  window.print();
+}
+
+// ── AUTH ──────────────────────────────────
+const { createClient } = supabase;
+const sbAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+(async()=>{ try{ const {data:{session}}=await sbAuth.auth.getSession(); if(!session) window.location.href='login.html'; }catch(e){} })();
 </script>
+
+
+
+<!-- PRINT CSS -->
+<style>
+@media print {
+  .bottom-bar, .app-nav, .send-options, .regen-overlay, .success-overlay, .toast { display:none!important }
+  .header { position:relative!important; background:#093D72!important; -webkit-print-color-adjust:exact; print-color-adjust:exact }
+  .report-hero { -webkit-print-color-adjust:exact; print-color-adjust:exact }
+  body { padding-bottom:0!important }
+  .section-tabs { display:none!important }
+  .sec-panel { display:block!important }
+}
+</style>
+
+<!-- NAV BAR -->
+<style>
+.app-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #D4E3EF;display:flex;z-index:200;box-shadow:0 -2px 12px rgba(12,35,64,.08)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 4px 10px;text-decoration:none;color:#456B8C;transition:color .15s;gap:2px}
+.nav-item.active{color:#1477C6}
+.nav-icon{font-size:20px;line-height:1}
+.nav-label{font-size:10px;font-weight:600;letter-spacing:.2px}
+</style>
+<nav class="app-nav">
+  <a href="index.html" class="nav-item"><div class="nav-icon">👥</div><div class="nav-label">CRM</div></a>
+  <a href="checklist.html" class="nav-item"><div class="nav-icon">📋</div><div class="nav-label">Checklist</div></a>
+  <a href="report-review.html" class="nav-item active"><div class="nav-icon">📄</div><div class="nav-label">Reports</div></a>
+  <a href="analytics.html" class="nav-item"><div class="nav-icon">📊</div><div class="nav-label">Analytics</div></a>
+  <a href="whatsapp-parser.html" class="nav-item"><div class="nav-icon">💬</div><div class="nav-label">Parser</div></a>
+</nav>
+
 </body>
 </html>

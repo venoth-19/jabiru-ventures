@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Jabiru Ventures — Site Inspection</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -312,9 +314,9 @@ input[type=file]{display:none}
 <input type="file" id="photo-input" accept="image/*" capture="environment">
 
 <script>
-const SUPABASE_URL      = 'https://siglqixiefvrxfvpxttj.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_3LA7_L8nCwysXKAI7-0Faw_v6m7iTL_';
-const CLAUDE_API_KEY    = 'YOUR_CLAUDE_API_KEY';
+
+
+
 
 const SECTIONS = [
   { id:'exterior', label:'Exterior', icon:'🏠', areas:[
@@ -1023,6 +1025,13 @@ async function submitChecklist() {
   try { localStorage.removeItem('jabiru_inspection_draft'); } catch(e) {}
   document.getElementById('success-score').textContent = calculateScore() + '%';
   document.getElementById('success-screen').classList.add('show');
+
+  // Auto-redirect to report review after 2 seconds if inspection was saved
+  setTimeout(() => {
+    const params = new URLSearchParams(window.location.search);
+    const jobId = params.get('job');
+    if (jobId) window.location.href = `report-review.html?job=${jobId}`;
+  }, 2500);
 }
 
 function buildPayload() {
@@ -1076,6 +1085,30 @@ function showToast(msg) {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
+
+// ── AUTH ──────────────────────────────────
+const { createClient } = supabase;
+const sbAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+(async()=>{ try{ const {data:{session}}=await sbAuth.auth.getSession(); if(!session) window.location.href='login.html'; }catch(e){} })();
 </script>
+
+
+
+<!-- NAV BAR -->
+<style>
+.app-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #D4E3EF;display:flex;z-index:200;box-shadow:0 -2px 12px rgba(12,35,64,.08)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 4px 10px;text-decoration:none;color:#456B8C;transition:color .15s;gap:2px}
+.nav-item.active{color:#1477C6}
+.nav-icon{font-size:20px;line-height:1}
+.nav-label{font-size:10px;font-weight:600;letter-spacing:.2px}
+</style>
+<nav class="app-nav">
+  <a href="index.html" class="nav-item"><div class="nav-icon">👥</div><div class="nav-label">CRM</div></a>
+  <a href="checklist.html" class="nav-item active"><div class="nav-icon">📋</div><div class="nav-label">Checklist</div></a>
+  <a href="report-review.html" class="nav-item"><div class="nav-icon">📄</div><div class="nav-label">Reports</div></a>
+  <a href="analytics.html" class="nav-item"><div class="nav-icon">📊</div><div class="nav-label">Analytics</div></a>
+  <a href="whatsapp-parser.html" class="nav-item"><div class="nav-icon">💬</div><div class="nav-label">Parser</div></a>
+</nav>
+
 </body>
 </html>

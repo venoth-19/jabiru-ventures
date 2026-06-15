@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Jabiru Ventures — Login</title>
+<script src="config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --blue:#1477C6;--blue-dark:#0C5499;--blue-deeper:#093D72;
+  --blue-light:#EBF4FD;--blue-mid:#B8D8F5;--cyan:#1AB5D4;
+  --bg:#F2F6FA;--bg2:#FFFFFF;--bg3:#EBF1F7;
+  --border:#D4E3EF;--text:#0C2340;--text2:#456B8C;--text3:#8AADC6;
+  --green:#0EA86A;--green-bg:#E4F7EF;
+  --red:#D93535;--red-bg:#FDEAEA;
+  --shadow:0 4px 24px rgba(12,35,64,.12);
+  --r:14px;--r-sm:9px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+
+.login-wrap{width:100%;max-width:380px}
+
+.logo-block{text-align:center;margin-bottom:32px}
+.logo-mark{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#fff;margin:0 auto 14px;box-shadow:0 4px 16px rgba(20,119,198,.35)}
+.logo-name{font-size:22px;font-weight:800;color:var(--blue-deeper);letter-spacing:-.4px}
+.logo-sub{font-size:12px;color:var(--text2);margin-top:4px}
+
+.login-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:28px 24px;box-shadow:var(--shadow)}
+.card-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:4px}
+.card-sub{font-size:12px;color:var(--text2);margin-bottom:22px}
+
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.form-input{width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:inherit;font-size:14px;padding:11px 13px;outline:none;transition:border-color .2s,box-shadow .2s}
+.form-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(20,119,198,.1);background:var(--bg2)}
+.form-input::placeholder{color:var(--text3)}
+.form-input.error{border-color:var(--red)}
+
+.pw-wrap{position:relative}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text3);padding:4px}
+
+.login-btn{width:100%;background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;border:none;border-radius:var(--r-sm);padding:13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(20,119,198,.35);letter-spacing:.2px}
+.login-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(20,119,198,.45)}
+.login-btn:active{transform:scale(.98)}
+.login-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+
+.error-msg{background:var(--red-bg);border:1px solid rgba(217,53,53,.2);border-radius:var(--r-sm);padding:10px 13px;font-size:12px;color:var(--red);margin-top:12px;display:none;align-items:center;gap:8px}
+.error-msg.show{display:flex}
+
+.success-msg{background:var(--green-bg);border:1px solid rgba(14,168,106,.2);border-radius:var(--r-sm);padding:10px 13px;font-size:12px;color:var(--green);margin-top:12px;display:none;align-items:center;gap:8px;font-weight:500}
+.success-msg.show{display:flex}
+
+.divider{height:1px;background:var(--border);margin:18px 0}
+.hint{font-size:11px;color:var(--text3);text-align:center;line-height:1.6}
+
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.footer-note{text-align:center;margin-top:20px;font-size:11px;color:var(--text3)}
+</style>
+</head>
+<body>
+
+<div class="login-wrap">
+  <div class="logo-block">
+    <div class="logo-mark">JV</div>
+    <div class="logo-name">Jabiru Ventures</div>
+    <div class="logo-sub">Internal Management System</div>
+  </div>
+
+  <div class="login-card">
+    <div class="card-title">Welcome back</div>
+    <div class="card-sub">Sign in to access the Jabiru dashboard</div>
+
+    <div class="form-group">
+      <label class="form-label">Email address</label>
+      <input class="form-input" id="email" type="email" placeholder="your@email.com" autocomplete="email">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <div class="pw-wrap">
+        <input class="form-input" id="password" type="password" placeholder="Enter your password" autocomplete="current-password">
+        <button class="pw-toggle" onclick="togglePw()" type="button" id="pw-eye">👁️</button>
+      </div>
+    </div>
+
+    <button class="login-btn" id="login-btn" onclick="login()">
+      <span id="login-text">Sign in</span>
+    </button>
+
+    <div class="error-msg" id="error-msg">
+      <span>⚠️</span><span id="error-text">Invalid email or password</span>
+    </div>
+    <div class="success-msg" id="success-msg">
+      <span>✓</span><span>Signed in — redirecting...</span>
+    </div>
+
+    <div class="divider"></div>
+    <div class="hint">This system is for authorised Jabiru Ventures staff only.<br>Contact your administrator if you need access.</div>
+  </div>
+
+  <div class="footer-note">Jabiru Ventures © 2025 · Powered by Jabiru CRM</div>
+</div>
+
+<script>
+
+
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// If already logged in, redirect
+window.addEventListener('load', async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) window.location.href = 'index.html';
+});
+
+async function login() {
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const btn      = document.getElementById('login-btn');
+  const txt      = document.getElementById('login-text');
+
+  if (!email || !password) { showError('Please enter your email and password'); return; }
+
+  btn.disabled = true;
+  txt.innerHTML = '<div class="spinner"></div>';
+  hideError();
+
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) {
+      showError(error.message === 'Invalid login credentials' ? 'Invalid email or password' : error.message);
+      btn.disabled = false;
+      txt.textContent = 'Sign in';
+    } else {
+      document.getElementById('success-msg').classList.add('show');
+      setTimeout(() => window.location.href = 'index.html', 800);
+    }
+  } catch(e) {
+    showError('Connection error. Please try again.');
+    btn.disabled = false;
+    txt.textContent = 'Sign in';
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  document.getElementById('error-text').textContent = msg;
+  el.classList.add('show');
+}
+function hideError() {
+  document.getElementById('error-msg').classList.remove('show');
+}
+function togglePw() {
+  const inp = document.getElementById('password');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  document.getElementById('pw-eye').textContent = inp.type === 'password' ? '👁️' : '🙈';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+</script>
+</body>
+</html>

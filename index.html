@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Jabiru Ventures — CRM</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -166,6 +168,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     </div>
   </div>
   <button class="add-btn" onclick="openAdd()">＋ Add client</button>
+  <button onclick="logout()" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2);padding:7px 12px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;margin-left:6px">⎋ Out</button>
 </div>
 
 <div class="nav-tabs">
@@ -254,8 +257,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 <div class="toast" id="toast"></div>
 
 <script>
-const SUPABASE_URL      = 'https://siglqixiefvrxfvpxttj.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_3LA7_L8nCwysXKAI7-0Faw_v6m7iTL_';
+
+
 
 const STATUSES=['Lead','Won','Booked','Inspected','Completed'];
 const KANCOLS=[
@@ -483,7 +486,42 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function closeOnOverlay(e,id){if(e.target.id===id)closeModal(id);}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
-loadData();
+// ── AUTH ──────────────────────────────────
+const { createClient } = supabase;
+const sbAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+async function checkAuth() {
+  try {
+    const { data: { session } } = await sbAuth.auth.getSession();
+    if (!session) { window.location.href = 'login.html'; return false; }
+    return true;
+  } catch(e) { return true; }
+}
+
+async function logout() {
+  await sbAuth.auth.signOut();
+  window.location.href = 'login.html';
+}
+
+checkAuth().then(ok => { if(ok) loadData(); });
 </script>
+
+<!-- NAV BAR -->
+<style>
+.app-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #D4E3EF;display:flex;z-index:200;box-shadow:0 -2px 12px rgba(12,35,64,.08)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 4px 10px;text-decoration:none;color:#456B8C;transition:color .15s;gap:2px}
+.nav-item.active{color:#1477C6}
+.nav-icon{font-size:20px;line-height:1}
+.nav-label{font-size:10px;font-weight:600;letter-spacing:.2px}
+body{padding-bottom:70px}
+</style>
+<nav class="app-nav">
+  <a href="index.html" class="nav-item active"><div class="nav-icon">👥</div><div class="nav-label">CRM</div></a>
+  <a href="checklist.html" class="nav-item"><div class="nav-icon">📋</div><div class="nav-label">Checklist</div></a>
+  <a href="report-review.html" class="nav-item"><div class="nav-icon">📄</div><div class="nav-label">Reports</div></a>
+  <a href="analytics.html" class="nav-item"><div class="nav-icon">📊</div><div class="nav-label">Analytics</div></a>
+  <a href="whatsapp-parser.html" class="nav-item"><div class="nav-icon">💬</div><div class="nav-label">Parser</div></a>
+</nav>
+
 </body>
 </html>

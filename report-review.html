@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Jabiru Ventures — Report Review</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#1477C6;--blue-dark:#0C5499;--blue-deeper:#093D72;
+  --blue-light:#EBF4FD;--blue-mid:#B8D8F5;--cyan:#1AB5D4;
+  --bg:#F2F6FA;--bg2:#FFFFFF;--bg3:#EBF1F7;
+  --border:#D4E3EF;--border2:#AAC9E3;
+  --text:#0C2340;--text2:#456B8C;--text3:#8AADC6;
+  --green:#0EA86A;--green-bg:#E4F7EF;--green-dark:#0A7A4C;
+  --amber:#D4820A;--amber-bg:#FDF2DC;--amber-dark:#8A5A0A;
+  --red:#D93535;--red-bg:#FDEAEA;--red-dark:#A02020;
+  --purple:#6B50D6;--purple-bg:#EEEBFC;
+  --shadow:0 1px 3px rgba(12,35,64,.07),0 4px 12px rgba(12,35,64,.05);
+  --shadow-md:0 4px 16px rgba(12,35,64,.12);
+  --r:12px;--r-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;padding-bottom:120px}
+
+/* HEADER */
+.header{background:var(--blue-deeper);padding:12px 16px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(9,61,114,.4)}
+.header-row{display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:8px}
+.logo-mark{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff}
+.logo-name{font-size:13px;font-weight:700;color:#fff}
+.logo-sub{font-size:10px;color:var(--blue-mid);text-transform:uppercase;letter-spacing:.4px}
+.status-pill{font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:.3px}
+.status-draft{background:rgba(212,130,10,.2);color:#FFC96B;border:1px solid rgba(212,130,10,.3)}
+.status-approved{background:rgba(14,168,106,.2);color:#6DEDB8;border:1px solid rgba(14,168,106,.3)}
+
+/* REPORT HERO */
+.report-hero{background:linear-gradient(135deg,var(--blue-deeper) 0%,var(--blue-dark) 100%);padding:20px 16px 24px;position:relative;overflow:hidden}
+.report-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(26,181,212,.2) 0%,transparent 70%);pointer-events:none}
+.hero-label{font-size:10px;font-weight:700;color:var(--blue-mid);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.hero-title{font-size:20px;font-weight:800;color:#fff;margin-bottom:4px;line-height:1.2;font-family:'Sora',sans-serif}
+.hero-address{font-size:12px;color:var(--blue-mid);margin-bottom:16px}
+.hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.hstat{background:rgba(255,255,255,.1);border-radius:var(--r-sm);padding:10px 8px;text-align:center;border:1px solid rgba(255,255,255,.12)}
+.hstat-val{font-size:16px;font-weight:800;color:#fff;font-family:'JetBrains Mono',monospace;line-height:1}
+.hstat-lbl{font-size:9px;color:var(--blue-mid);text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+
+/* AI STATUS */
+.ai-status{margin:14px 16px;background:var(--bg2);border-radius:var(--r);border:1px solid var(--border);padding:14px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px}
+.ai-icon{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--purple-bg),var(--blue-light));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.ai-info{flex:1}
+.ai-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
+.ai-sub{font-size:11px;color:var(--text2)}
+.ai-badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;background:var(--purple-bg);color:var(--purple)}
+.ai-generating{display:flex;align-items:center;gap:4px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.ai-dot{width:6px;height:6px;border-radius:50%;background:var(--purple);animation:pulse 1.2s infinite}
+.ai-dot:nth-child(2){animation-delay:.2s}
+.ai-dot:nth-child(3){animation-delay:.4s}
+
+/* SECTION TABS */
+.section-tabs{padding:0 16px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:14px}
+.section-tabs::-webkit-scrollbar{display:none}
+.stab{flex-shrink:0;padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--bg2);color:var(--text2);font-family:inherit;transition:all .15s;white-space:nowrap}
+.stab.on{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(20,119,198,.3)}
+.stab.edited{background:var(--amber-bg);border-color:var(--amber);color:var(--amber-dark)}
+
+/* CONTENT */
+.content{padding:0 16px}
+.sec-panel{display:none}
+.sec-panel.on{display:block}
+
+/* REPORT SECTION CARD */
+.report-section{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow)}
+.rs-head{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:linear-gradient(135deg,var(--bg3),var(--bg2))}
+.rs-title{font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
+.rs-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+.rs-actions{display:flex;gap:6px}
+.rs-btn{padding:5px 10px;border-radius:var(--r-sm);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--bg2);color:var(--text2);transition:all .15s;display:flex;align-items:center;gap:4px}
+.rs-btn:hover{border-color:var(--border2)}
+.rs-btn.edit-btn{background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid)}
+.rs-btn.regen-btn{background:var(--purple-bg);color:var(--purple);border-color:rgba(107,80,214,.2)}
+.rs-body{padding:16px}
+
+/* TEXT DISPLAY / EDIT */
+.report-text{font-size:13px;color:var(--text);line-height:1.8;font-family:'Lora',serif}
+.report-text p{margin-bottom:10px}
+.report-text p:last-child{margin-bottom:0}
+.report-textarea{width:100%;background:var(--bg3);border:1.5px solid var(--blue-mid);border-radius:var(--r-sm);color:var(--text);font-family:'Lora',serif;font-size:13px;padding:12px;outline:none;line-height:1.8;resize:vertical;min-height:120px;transition:border-color .2s}
+.report-textarea:focus{border-color:var(--blue);background:var(--bg2)}
+.edit-hint{font-size:10px;color:var(--text3);margin-top:6px;display:flex;align-items:center;gap:4px}
+.save-edit-btn{margin-top:8px;padding:8px 16px;background:var(--blue);color:#fff;border:none;border-radius:var(--r-sm);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
+.cancel-edit-btn{margin-top:8px;margin-left:6px;padding:8px 14px;background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:var(--r-sm);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
+
+/* DEFECT TABLE */
+.defect-table{width:100%;border-collapse:collapse;margin-top:8px}
+.defect-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);padding:6px 8px;text-align:left;border-bottom:2px solid var(--border);white-space:nowrap}
+.defect-table td{font-size:12px;padding:8px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--text)}
+.defect-table tr:last-child td{border-bottom:none}
+.sev-tag{font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;text-transform:uppercase;white-space:nowrap}
+.sev-critical{background:var(--red-bg);color:var(--red-dark)}
+.sev-major{background:#FEF0DC;color:#8A4A0A}
+.sev-minor{background:var(--amber-bg);color:var(--amber-dark)}
+.no-defects{font-size:12px;color:var(--green-dark);background:var(--green-bg);padding:10px 12px;border-radius:var(--r-sm);display:flex;align-items:center;gap:6px;font-weight:500}
+
+/* SCORE DISPLAY */
+.score-display{display:flex;align-items:center;gap:16px;padding:16px;background:linear-gradient(135deg,var(--blue-deeper),var(--blue-dark));border-radius:var(--r-sm);color:#fff;margin-bottom:12px}
+.score-num{font-size:36px;font-weight:800;font-family:'JetBrains Mono',monospace;line-height:1}
+.score-info{flex:1}
+.score-grade{font-size:14px;font-weight:700;color:var(--blue-mid)}
+.score-verdict{font-size:11px;color:var(--blue-mid);margin-top:2px}
+.score-bar-wrap{flex:1;background:rgba(255,255,255,.15);height:6px;border-radius:3px;overflow:hidden}
+.score-bar-fill{height:100%;background:linear-gradient(90deg,var(--cyan),#fff);border-radius:3px}
+
+/* PHOTOS GRID */
+.photos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.photo-item{position:relative;aspect-ratio:1;border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--border)}
+.photo-item img{width:100%;height:100%;object-fit:cover}
+.photo-tag{position:absolute;bottom:0;left:0;right:0;background:rgba(9,61,114,.8);color:#fff;font-size:9px;padding:4px 6px;line-height:1.3}
+.photo-sev{position:absolute;top:5px;right:5px}
+
+/* RECOMMENDATIONS */
+.rec-list{list-style:none;padding:0}
+.rec-item{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;background:var(--bg3);border-radius:var(--r-sm);margin-bottom:6px;border-left:3px solid var(--blue)}
+.rec-item.critical-rec{border-left-color:var(--red);background:var(--red-bg)}
+.rec-item.major-rec{border-left-color:var(--amber);background:var(--amber-bg)}
+.rec-num{width:20px;height:20px;border-radius:50%;background:var(--blue);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.rec-text{font-size:12px;color:var(--text);line-height:1.5}
+
+/* SIGNATURE */
+.sig-display{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;display:flex;align-items:center;gap:12px}
+.sig-img{max-height:60px;max-width:200px;border:1px solid var(--border);border-radius:4px;background:#fff}
+.sig-info .sig-name{font-size:13px;font-weight:700;color:var(--text)}
+.sig-info .sig-date{font-size:11px;color:var(--text2);margin-top:2px}
+
+/* SEND OPTIONS */
+.send-options{margin:0 16px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px;box-shadow:var(--shadow)}
+.so-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px}
+.so-row{display:flex;gap:8px}
+.so-opt{flex:1;padding:10px;border-radius:var(--r-sm);border:1.5px solid var(--border);cursor:pointer;text-align:center;font-size:11px;font-weight:600;background:var(--bg2);transition:all .15s;font-family:inherit;color:var(--text2)}
+.so-opt.on{border-color:var(--blue);background:var(--blue-light);color:var(--blue-dark)}
+
+/* BOTTOM BAR */
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);padding:12px 16px;box-shadow:0 -4px 20px rgba(12,35,64,.1);z-index:100;display:flex;gap:8px}
+.approve-btn{flex:1;background:linear-gradient(135deg,var(--green),var(--green-dark));color:#fff;border:none;border-radius:var(--r-sm);padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 16px rgba(14,168,106,.35)}
+.approve-btn:hover{transform:translateY(-1px)}
+.approve-btn:disabled{opacity:.5;cursor:not-allowed}
+.approve-btn.approved{background:linear-gradient(135deg,var(--blue),var(--blue-dark));box-shadow:0 4px 16px rgba(20,119,198,.35)}
+.send-btn{flex:1;background:var(--blue);color:#fff;border:none;border-radius:var(--r-sm);padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 16px rgba(20,119,198,.35);display:none}
+.send-btn.show{display:flex}
+.back-link{padding:14px 12px;background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:var(--r-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+
+/* SUCCESS */
+.success-overlay{display:none;position:fixed;inset:0;background:rgba(9,61,114,.6);z-index:500;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.success-overlay.show{display:flex}
+.success-card{background:var(--bg2);border-radius:var(--r);padding:24px;max-width:360px;width:100%;text-align:center;box-shadow:var(--shadow-md)}
+.success-icon{font-size:48px;margin-bottom:12px}
+.success-title{font-size:18px;font-weight:800;color:var(--text);margin-bottom:6px}
+.success-sub{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:20px}
+.success-actions{display:flex;gap:8px}
+.sact{flex:1;padding:11px;border-radius:var(--r-sm);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border:none}
+.sact-primary{background:var(--blue);color:#fff}
+.sact-secondary{background:var(--bg3);color:var(--text2);border:1px solid var(--border) !important}
+
+/* REGEN LOADING */
+.regen-overlay{display:none;position:fixed;inset:0;background:rgba(9,61,114,.7);z-index:400;align-items:center;justify-content:center;flex-direction:column;gap:12px;backdrop-filter:blur(3px)}
+.regen-overlay.show{display:flex}
+.regen-spinner{width:48px;height:48px;border-radius:50%;border:3px solid rgba(255,255,255,.2);border-top-color:var(--cyan);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.regen-text{color:#fff;font-size:14px;font-weight:600}
+
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--blue-deeper);color:#fff;padding:9px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+
+@media(min-width:600px){
+  .bottom-bar{max-width:600px;left:50%;transform:translateX(-50%)}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-row">
+    <div class="logo">
+      <div class="logo-mark">JV</div>
+      <div>
+        <div class="logo-name">Jabiru Ventures</div>
+        <div class="logo-sub">Report Review</div>
+      </div>
+    </div>
+    <div class="status-pill status-draft" id="status-pill">AI Draft</div>
+  </div>
+</div>
+
+<div class="report-hero">
+  <div class="hero-label">Inspection Report</div>
+  <div class="hero-title" id="hero-title">Loading report...</div>
+  <div class="hero-address" id="hero-address">—</div>
+  <div class="hero-stats">
+    <div class="hstat"><div class="hstat-val" id="hs-score">—</div><div class="hstat-lbl">Score</div></div>
+    <div class="hstat"><div class="hstat-val" style="color:#FF6B6B" id="hs-crit">—</div><div class="hstat-lbl">Critical</div></div>
+    <div class="hstat"><div class="hstat-val" style="color:#FFC96B" id="hs-major">—</div><div class="hstat-lbl">Major</div></div>
+    <div class="hstat"><div class="hstat-val" style="color:#FFE08A" id="hs-minor">—</div><div class="hstat-lbl">Minor</div></div>
+  </div>
+</div>
+
+<div class="ai-status" id="ai-status">
+  <div class="ai-icon">🤖</div>
+  <div class="ai-info">
+    <div class="ai-title" id="ai-status-title">AI report ready for review</div>
+    <div class="ai-sub" id="ai-status-sub">Review each section and approve when ready</div>
+  </div>
+  <div class="ai-badge" id="ai-badge">Draft</div>
+</div>
+
+<div class="section-tabs" id="section-tabs"></div>
+
+<div class="content" id="main-content"></div>
+
+<div class="send-options" id="send-options" style="display:none">
+  <div class="so-title">Send report to</div>
+  <div class="so-row">
+    <button class="so-opt on" id="so-client" onclick="toggleSendOpt('client')">👤 Client</button>
+    <button class="so-opt" id="so-developer" onclick="toggleSendOpt('developer')">🏗️ Developer</button>
+    <button class="so-opt" id="so-both" onclick="toggleSendOpt('both')">👥 Both</button>
+  </div>
+</div>
+
+<div class="bottom-bar">
+  <button class="back-link" onclick="window.location.href='index.html'">← CRM</button>
+  <button class="approve-btn" id="approve-btn" onclick="approveReport()">✓ Approve Report</button>
+  <button class="send-btn" id="send-btn" onclick="sendReport()">📤 Send Report</button>
+</div>
+
+<div class="success-overlay" id="success-overlay">
+  <div class="success-card">
+    <div class="success-icon">📬</div>
+    <div class="success-title">Report sent!</div>
+    <div class="success-sub">The inspection report has been sent to the <span id="sent-to">client</span>. Job status updated to Completed.</div>
+    <div class="success-actions">
+      <button class="sact sact-secondary" onclick="closeSuccess()">Close</button>
+      <button class="sact sact-primary" onclick="window.location.href='index.html'">← Back to CRM</button>
+    </div>
+  </div>
+</div>
+
+<div class="regen-overlay" id="regen-overlay">
+  <div class="regen-spinner"></div>
+  <div class="regen-text" id="regen-text">AI regenerating section...</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL      = 'https://siglqixiefvrxfvpxttj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_3LA7_L8nCwysXKAI7-0Faw_v6m7iTL_';
+const CLAUDE_API_KEY    = 'YOUR_CLAUDE_API_KEY';
+
+const SECTIONS = [
+  { id:'summary',         label:'Summary',          icon:'📋' },
+  { id:'executive',       label:'Executive',         icon:'📊' },
+  { id:'defects',         label:'Defects',           icon:'🔍' },
+  { id:'photos',          label:'Photos',            icon:'📷' },
+  { id:'recommendations', label:'Recommendations',   icon:'💡' },
+  { id:'signoff',         label:'Sign-off',          icon:'✍️' },
+];
+
+let reportData = null;
+let editedSections = new Set();
+let approved = false;
+let sendTarget = 'client';
+
+// ── DEMO REPORT DATA ─────────────────────
+const DEMO = {
+  job: {
+    invoice_no: 'JV-2025-0004',
+    client: 'Mohd Faizal',
+    address: 'No 12, Jalan Seksyen 7, Shah Alam',
+    property_type: 'Landed',
+    inspection_date: '2025-04-05',
+    inspection_score: 72,
+    critical_count: 2,
+    major_count: 5,
+    minor_count: 8,
+    overall_rating: 3,
+    signed_by: 'Faizal bin Ahmad',
+    signatureData: null,
+  },
+  sections: {
+    summary: `This inspection report covers the residential landed property located at No 12, Jalan Seksyen 7, Shah Alam, Selangor. The inspection was conducted by Jabiru Ventures on 5 April 2025 at the request of the client, Mr Mohd Faizal.
+
+The property is a double-storey landed house, estimated to be approximately 8 years old at the time of inspection. The inspection covered all accessible areas including exterior, living areas, bedrooms, bathrooms, kitchen, and mechanical and electrical systems.
+
+A total of 15 defects were identified during the inspection — 2 Critical, 5 Major, and 8 Minor. Immediate attention is recommended for the critical defects relating to the roof structure and main electrical distribution board.`,
+
+    executive: `Overall, the property presents in fair condition with several areas requiring attention. The property achieved an inspection score of 72 out of 100, graded C — Fair condition.
+
+The most significant concerns identified are structural water ingress through the roof at the rear section of the property, and an outdated electrical distribution board that does not comply with current safety standards. These two issues are classified as Critical and require immediate professional attention.
+
+Major defects were identified in the master bathroom (moisture damage behind wall tiles), kitchen wet area (drainage gradient insufficiency), and two of the bedroom windows (failed rubber seals allowing water penetration during heavy rain).
+
+Minor defects throughout the property include paint deterioration, hairline cracks consistent with normal settlement, and worn door hardware. These are cosmetic in nature and do not affect the structural integrity or safety of the property.`,
+
+    defects: [
+      { area:'Roof & Gutters',           severity:'Critical', description:'Active water ingress detected at rear section junction. Significant moisture staining on ceiling boards below.',          room:'Exterior' },
+      { area:'Electrical DB & Wiring',   severity:'Critical', description:'Main distribution board is a non-RCD type, non-compliant with current standards. Visible signs of burning on two circuit breakers.', room:'M&E Systems' },
+      { area:'Master Bathroom',          severity:'Major',    description:'Significant moisture damage behind wall tiles. Multiple tiles hollow when tested. Risk of tile failure.',                  room:'Bathrooms' },
+      { area:'Kitchen (Wet)',            severity:'Major',    description:'Floor drainage gradient insufficient, causing water pooling at south-east corner.',                                         room:'Kitchen' },
+      { area:'Bedroom 2',                severity:'Major',    description:'Window rubber seals failed on both windows. Water staining on surrounding wall indicates active leakage during rain.',      room:'Bedrooms' },
+      { area:'Building Facade',          severity:'Minor',    description:'Hairline cracks on external render, consistent with normal settlement. Recommend monitoring.',                               room:'Exterior' },
+      { area:'Living Room',              severity:'Minor',    description:'Paint peeling at ceiling perimeter, likely due to previous moisture exposure now resolved.',                                room:'Living Areas' },
+      { area:'Master Bedroom',           severity:'Minor',    description:'Door frame not fully square — door requires adjustment for smooth operation.',                                              room:'Bedrooms' },
+    ],
+
+    recommendations: [
+      { priority:'Critical', text:'Engage a licensed waterproofing contractor to investigate and repair the roof water ingress at the rear section. Repair ceiling boards after waterproofing confirmed effective.' },
+      { priority:'Critical', text:'Engage a licensed electrician to replace the main distribution board with a current-standard RCD-protected unit. Do not delay as this poses a fire and electrocution risk.' },
+      { priority:'Major',    text:'Engage a tiling contractor to remove and replace the master bathroom wall tiles. Inspect and dry out substrate before re-tiling.' },
+      { priority:'Major',    text:'Rectify kitchen wet area floor drainage gradient. A screed correction may be required.' },
+      { priority:'Major',    text:'Replace rubber window seals on Bedroom 2 windows. Clean and treat existing water staining on surrounding walls.' },
+      { priority:'Minor',    text:'Fill and repaint hairline cracks on external facade. Monitor for further movement over the next 12 months.' },
+      { priority:'Minor',    text:'Repaint ceiling perimeter in living room. Ensure no active moisture source before repainting.' },
+    ],
+  }
+};
+
+window.addEventListener('load', () => {
+  loadReport();
+  renderTabs();
+  showSection('summary');
+});
+
+function loadReport() {
+  const params = new URLSearchParams(window.location.search);
+  const inspectionId = params.get('inspection');
+
+  if (inspectionId && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+    fetchReport(inspectionId);
+  } else {
+    reportData = DEMO;
+    updateHero();
+  }
+}
+
+async function fetchReport(id) {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/inspections?id=eq.${id}&select=*,jobs(*, customers(*), properties(*))`, {
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+    });
+    const data = await r.json();
+    if (data[0]) {
+      const ins = data[0];
+      reportData = {
+        job: {
+          invoice_no: ins.jobs?.invoice_no || '—',
+          client: ins.jobs?.customers?.full_name || '—',
+          address: ins.jobs?.properties?.address || '—',
+          property_type: ins.jobs?.properties?.property_type || '—',
+          inspection_date: ins.inspected_at?.split('T')[0],
+          inspection_score: ins.inspection_score || 0,
+          critical_count: ins.critical_count || 0,
+          major_count: ins.major_count || 0,
+          minor_count: ins.minor_count || 0,
+          overall_rating: ins.overall_rating,
+          signed_by: ins.signed_by,
+          signatureData: ins.signature,
+          notes_raw: ins.sections
+        },
+        sections: ins.report_draft ? JSON.parse(ins.report_draft) : null
+      };
+      if (!reportData.sections && CLAUDE_API_KEY !== 'YOUR_CLAUDE_API_KEY') {
+        generateReportWithAI(ins);
+      } else if (!reportData.sections) {
+        reportData.sections = DEMO.sections;
+        reportData.sections.defects = extractDefectsFromSections(ins.sections);
+      }
+      updateHero();
+    }
+  } catch(e) { reportData = DEMO; updateHero(); }
+}
+
+function extractDefectsFromSections(sections) {
+  if (!sections) return DEMO.sections.defects;
+  const defects = [];
+  sections.forEach(sec => {
+    (sec.defects || []).forEach(d => {
+      defects.push({ area: sec.area, severity: d.severity, description: d.description, room: sec.section });
+    });
+  });
+  return defects.length > 0 ? defects : DEMO.sections.defects;
+}
+
+async function generateReportWithAI(inspectionData) {
+  showRegenOverlay('AI generating your report...');
+  try {
+    const prompt = buildReportPrompt(inspectionData);
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'x-api-key':CLAUDE_API_KEY, 'anthropic-version':'2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        messages: [{ role:'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '';
+    try {
+      const parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
+      reportData.sections = { ...DEMO.sections, ...parsed };
+      reportData.sections.defects = extractDefectsFromSections(inspectionData.sections);
+    } catch(e) { reportData.sections = DEMO.sections; }
+  } catch(e) { reportData.sections = DEMO.sections; }
+  hideRegenOverlay();
+  showSection(SECTIONS[0].id);
+}
+
+function buildReportPrompt(ins) {
+  const defects = extractDefectsFromSections(ins.sections);
+  return `You are a professional building inspector writing a formal inspection report for Jabiru Ventures, a Malaysian BEM-certified inspection company.
+
+Property: ${ins.jobs?.properties?.address || 'Unknown'}
+Client: ${ins.jobs?.customers?.full_name || 'Unknown'}
+Score: ${ins.inspection_score}/100
+Critical defects: ${ins.critical_count}, Major: ${ins.major_count}, Minor: ${ins.minor_count}
+Defects: ${JSON.stringify(defects.slice(0,10))}
+Inspector notes: ${ins.overall_remarks || 'None'}
+
+Write a professional inspection report. Respond ONLY with valid JSON in this exact format, no markdown, no preamble:
+{"summary":"3 paragraph summary...","executive":"2 paragraph executive summary...","recommendations_text":"numbered recommendations as a single string with newlines"}`;
+}
+
+function updateHero() {
+  if (!reportData?.job) return;
+  const j = reportData.job;
+  document.getElementById('hero-title').textContent  = j.client ? `${j.client}'s Property` : 'Inspection Report';
+  document.getElementById('hero-address').textContent = j.address || '—';
+  document.getElementById('hs-score').textContent    = (j.inspection_score || '—') + (j.inspection_score ? '%' : '');
+  document.getElementById('hs-crit').textContent     = j.critical_count || 0;
+  document.getElementById('hs-major').textContent    = j.major_count || 0;
+  document.getElementById('hs-minor').textContent    = j.minor_count || 0;
+  document.getElementById('success-ref').textContent = j.invoice_no || '—';
+}
+
+function renderTabs() {
+  const tabs = document.getElementById('section-tabs');
+  tabs.innerHTML = SECTIONS.map(s => `<button class="stab" id="stab-${s.id}" onclick="showSection('${s.id}')">${s.icon} ${s.label}</button>`).join('');
+}
+
+function showSection(secId) {
+  document.querySelectorAll('.stab').forEach(t => t.classList.remove('on'));
+  const tab = document.getElementById(`stab-${secId}`);
+  if (tab) { tab.classList.add('on'); tab.scrollIntoView({inline:'center',behavior:'smooth'}); }
+
+  const content = document.getElementById('main-content');
+  switch(secId) {
+    case 'summary':         renderSummary(); break;
+    case 'executive':       renderExecutive(); break;
+    case 'defects':         renderDefects(); break;
+    case 'photos':          renderPhotos(); break;
+    case 'recommendations': renderRecommendations(); break;
+    case 'signoff':         renderSignoff(); break;
+  }
+}
+
+// ── SUMMARY ──────────────────────────────
+function renderSummary() {
+  const text = reportData?.sections?.summary || '';
+  const content = document.getElementById('main-content');
+  content.innerHTML = `
+    <div class="report-section">
+      <div class="rs-head">
+        <div class="rs-title">📋 Report Summary</div>
+        <div class="rs-actions">
+          <button class="rs-btn regen-btn" onclick="regenSection('summary')">🤖 Regenerate</button>
+          <button class="rs-btn edit-btn" onclick="editSection('summary')">✏️ Edit</button>
+        </div>
+      </div>
+      <div class="rs-body">
+        <div class="report-text" id="display-summary">${text.split('\n\n').map(p=>`<p>${p}</p>`).join('')}</div>
+        <div id="edit-summary" style="display:none">
+          <textarea class="report-textarea" id="ta-summary">${text}</textarea>
+          <div class="edit-hint">✏️ Edit the AI-generated text above</div>
+          <button class="save-edit-btn" onclick="saveEdit('summary')">Save</button>
+          <button class="cancel-edit-btn" onclick="cancelEdit('summary')">Cancel</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── EXECUTIVE ────────────────────────────
+function renderExecutive() {
+  const text = reportData?.sections?.executive || '';
+  const j    = reportData?.job || {};
+  const score = j.inspection_score || 0;
+  const grade = score>=90?'A':score>=75?'B':score>=60?'C':score>=45?'D':'F';
+  const verdict = score>=90?'Excellent':score>=75?'Good':score>=60?'Fair':score>=45?'Poor':'Critical Issues';
+  const content = document.getElementById('main-content');
+  content.innerHTML = `
+    <div class="report-section">
+      <div class="rs-head">
+        <div class="rs-title">📊 Executive Summary</div>
+        <div class="rs-actions">
+          <button class="rs-btn regen-btn" onclick="regenSection('executive')">🤖 Regenerate</button>
+          <button class="rs-btn edit-btn" onclick="editSection('executive')">✏️ Edit</button>
+        </div>
+      </div>
+      <div class="rs-body">
+        <div class="score-display">
+          <div>
+            <div class="score-num">${score}<span style="font-size:16px;opacity:.6">/100</span></div>
+          </div>
+          <div class="score-info">
+            <div class="score-grade">Grade ${grade} — ${verdict}</div>
+            <div class="score-verdict">${j.critical_count||0} Critical · ${j.major_count||0} Major · ${j.minor_count||0} Minor</div>
+            <div class="score-bar-wrap" style="margin-top:8px">
+              <div class="score-bar-fill" style="width:${score}%"></div>
+            </div>
+          </div>
+        </div>
+        <div class="report-text" id="display-executive">${text.split('\n\n').map(p=>`<p>${p}</p>`).join('')}</div>
+        <div id="edit-executive" style="display:none">
+          <textarea class="report-textarea" id="ta-executive">${text}</textarea>
+          <button class="save-edit-btn" onclick="saveEdit('executive')">Save</button>
+          <button class="cancel-edit-btn" onclick="cancelEdit('executive')">Cancel</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── DEFECTS ──────────────────────────────
+function renderDefects() {
+  const defects = reportData?.sections?.defects || [];
+  const content = document.getElementById('main-content');
+  const criticals = defects.filter(d=>d.severity==='Critical');
+  const majors    = defects.filter(d=>d.severity==='Major');
+  const minors    = defects.filter(d=>d.severity==='Minor');
+
+  const renderGroup = (title, items, cls) => {
+    if (!items.length) return '';
+    return `<div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <span style="width:8px;height:8px;border-radius:50%;background:${cls==='sev-critical'?'var(--red)':cls==='sev-major'?'#E07008':'var(--amber)'};display:inline-block"></span>
+        ${title} (${items.length})
+      </div>
+      <table class="defect-table">
+        <thead><tr><th>#</th><th>Area</th><th>Description</th><th>Sev</th></tr></thead>
+        <tbody>
+          ${items.map((d,i)=>`<tr>
+            <td style="color:var(--text3);font-family:'JetBrains Mono',monospace">${String(i+1).padStart(2,'0')}</td>
+            <td style="white-space:nowrap;font-weight:500">${d.area}</td>
+            <td>${d.description}</td>
+            <td><span class="sev-tag ${cls}">${d.severity}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  };
+
+  content.innerHTML = `
+    <div class="report-section">
+      <div class="rs-head">
+        <div class="rs-title">🔍 Defects Found <span style="font-size:11px;color:var(--text3);font-weight:400;margin-left:4px">${defects.length} total</span></div>
+      </div>
+      <div class="rs-body">
+        ${defects.length === 0 ? '<div class="no-defects">✓ No defects found in this inspection</div>' : ''}
+        ${renderGroup('Critical', criticals, 'sev-critical')}
+        ${renderGroup('Major', majors, 'sev-major')}
+        ${renderGroup('Minor', minors, 'sev-minor')}
+      </div>
+    </div>`;
+}
+
+// ── PHOTOS ───────────────────────────────
+function renderPhotos() {
+  const sections = reportData?.job?.notes_raw || [];
+  const allPhotos = [];
+  if (Array.isArray(sections)) {
+    sections.forEach(sec => {
+      (sec.defects || []).forEach(d => {
+        if (d.photoUrl) allPhotos.push({ url:d.photoUrl, tag:d.aiTag||d.description, severity:d.severity, area:sec.area });
+      });
+    });
+  }
+  const content = document.getElementById('main-content');
+  content.innerHTML = `
+    <div class="report-section">
+      <div class="rs-head">
+        <div class="rs-title">📷 Inspection Photos <span style="font-size:11px;color:var(--text3);font-weight:400;margin-left:4px">${allPhotos.length} photos</span></div>
+      </div>
+      <div class="rs-body">
+        ${allPhotos.length === 0 ?
+          `<div style="text-align:center;padding:32px;color:var(--text3)">
+            <div style="font-size:32px;margin-bottom:8px">📷</div>
+            <div style="font-size:13px">Photos will appear here after inspection is submitted with photos attached.</div>
+          </div>` :
+          `<div class="photos-grid">${allPhotos.map(p=>`
+            <div class="photo-item">
+              <img src="${p.url}" loading="lazy">
+              <div class="photo-tag">${p.tag||p.area}</div>
+              ${p.severity ? `<div class="photo-sev"><span class="sev-tag sev-${p.severity.toLowerCase()}">${p.severity[0]}</span></div>` : ''}
+            </div>`).join('')}
+          </div>`
+        }
+        <div style="margin-top:12px;font-size:11px;color:var(--text3);line-height:1.6">All photos are captured on-site by Jabiru Ventures inspector. AI-tagged labels are for reference only.</div>
+      </div>
+    </div>`;
+}
+
+// ── RECOMMENDATIONS ───────────────────────
+function renderRecommendations() {
+  const recs = reportData?.sections?.recommendations || [];
+  const content = document.getElementById('main-content');
+  content.innerHTML = `
+    <div class="report-section">
+      <div class="rs-head">
+        <div class="rs-title">💡 Recommendations</div>
+        <div class="rs-actions">
+          <button class="rs-btn edit-btn" onclick="editSection('recommendations')">✏️ Edit</button>
+        </div>
+      </div>
+      <div class="rs-body" id="rec-body">
+        <div id="display-recommendations">
+          ${Array.isArray(recs) ? `<ul class="rec-list">
+            ${recs.map((r,i)=>`<li class="rec-item ${r.priority==='Critical'?'critical-rec':r.priority==='Major'?'major-rec':''}">
+              <div class="rec-num">${i+1}</div>
+              <div class="rec-text"><strong>${r.priority}:</strong> ${r.text}</div>
+            </li>`).join('')}
+          </ul>` : `<div class="report-text">${(recs||'').split('\n').filter(Boolean).map(r=>`<p>${r}</p>`).join('')}</div>`}
+        </div>
+        <div id="edit-recommendations" style="display:none">
+          <textarea class="report-textarea" id="ta-recommendations" rows="8">${Array.isArray(recs)?recs.map(r=>`${r.priority}: ${r.text}`).join('\n'):recs||''}</textarea>
+          <div class="edit-hint">✏️ One recommendation per line. Format: Priority: Description</div>
+          <button class="save-edit-btn" onclick="saveRecsEdit()">Save</button>
+          <button class="cancel-edit-btn" onclick="cancelEdit('recommendations')">Cancel</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── SIGNOFF ──────────────────────────────
+function renderSignoff() {
+  const j = reportData?.job || {};
+  const content = document.getElementById('main-content');
+  content.innerHTML = `
+    <div class="report-section">
+      <div class="rs-head"><div class="rs-title">✍️ Sign-off Details</div></div>
+      <div class="rs-body">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="background:var(--bg3);border-radius:var(--r-sm);padding:12px;border:1px solid var(--border)">
+            <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Inspection details</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div><div style="font-size:10px;color:var(--text3)">Invoice</div><div style="font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace">${j.invoice_no||'—'}</div></div>
+              <div><div style="font-size:10px;color:var(--text3)">Date</div><div style="font-size:13px;font-weight:700">${j.inspection_date||'—'}</div></div>
+              <div><div style="font-size:10px;color:var(--text3)">Client</div><div style="font-size:13px;font-weight:700">${j.client||'—'}</div></div>
+              <div><div style="font-size:10px;color:var(--text3)">Score</div><div style="font-size:13px;font-weight:700">${j.inspection_score||'—'}%</div></div>
+            </div>
+          </div>
+          ${j.signatureData ? `
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Client signature</div>
+            <div class="sig-display">
+              <img class="sig-img" src="${j.signatureData}">
+              <div class="sig-info">
+                <div class="sig-name">${j.signed_by||'Client'}</div>
+                <div class="sig-date">Signed on ${j.inspection_date||'—'}</div>
+              </div>
+            </div>
+          </div>` : `
+          <div style="background:var(--amber-bg);border:1px solid var(--amber);border-radius:var(--r-sm);padding:12px;font-size:12px;color:var(--amber-dark)">⚠️ No signature captured during inspection. Client sign-off pending.</div>`}
+          <div style="background:var(--blue-light);border:1px solid var(--blue-mid);border-radius:var(--r-sm);padding:12px">
+            <div style="font-size:10px;font-weight:700;color:var(--blue-dark);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Inspector certification</div>
+            <div style="font-size:12px;color:var(--blue-dark);line-height:1.5">This inspection was conducted by a Jabiru Ventures BEM-certified inspector. All findings are based on visual inspection of accessible areas. Hidden defects may exist that were not apparent at the time of inspection.</div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center">
+            <div style="font-size:11px;color:var(--text3)">Approved by Jabiru Ventures</div>
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:800">JV</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── EDIT ─────────────────────────────────
+function editSection(id) {
+  document.getElementById(`display-${id}`).style.display = 'none';
+  document.getElementById(`edit-${id}`).style.display    = 'block';
+}
+
+function cancelEdit(id) {
+  document.getElementById(`display-${id}`).style.display = 'block';
+  document.getElementById(`edit-${id}`).style.display    = 'none';
+}
+
+function saveEdit(id) {
+  const ta = document.getElementById(`ta-${id}`);
+  if (!ta) return;
+  const newText = ta.value.trim();
+  reportData.sections[id] = newText;
+  editedSections.add(id);
+  const tab = document.getElementById(`stab-${id}`);
+  if (tab) tab.classList.add('edited');
+  cancelEdit(id);
+  const display = document.getElementById(`display-${id}`);
+  if (display) display.innerHTML = newText.split('\n\n').map(p=>`<p>${p}</p>`).join('');
+  showToast('Section updated ✓');
+}
+
+function saveRecsEdit() {
+  const ta = document.getElementById('ta-recommendations');
+  if (!ta) return;
+  const lines = ta.value.split('\n').filter(Boolean);
+  const parsed = lines.map(l => {
+    const match = l.match(/^(Critical|Major|Minor):\s*(.+)/i);
+    return match ? { priority: match[1], text: match[2] } : { priority: 'Minor', text: l };
+  });
+  reportData.sections.recommendations = parsed;
+  editedSections.add('recommendations');
+  cancelEdit('recommendations');
+  renderRecommendations();
+  showToast('Recommendations updated ✓');
+}
+
+// ── REGEN ─────────────────────────────────
+async function regenSection(secId) {
+  if (CLAUDE_API_KEY === 'YOUR_CLAUDE_API_KEY') { showToast('Add Claude API key to regenerate'); return; }
+  showRegenOverlay(`AI rewriting ${secId} section...`);
+  try {
+    const j = reportData?.job || {};
+    const prompt = `You are a BEM-certified building inspector for Jabiru Ventures, Malaysia.
+Write the "${secId}" section of an inspection report for:
+Client: ${j.client}, Property: ${j.address}, Score: ${j.inspection_score}/100
+Defects: ${j.critical_count} Critical, ${j.major_count} Major, ${j.minor_count} Minor
+Write 2-3 professional paragraphs. Plain text, no markdown, no preamble.`;
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':CLAUDE_API_KEY,'anthropic-version':'2023-06-01'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:600, messages:[{role:'user',content:prompt}] })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text?.trim() || '';
+    if (text) {
+      reportData.sections[secId] = text;
+      editedSections.add(secId);
+    }
+  } catch(e) {}
+  hideRegenOverlay();
+  if (secId === 'summary') renderSummary();
+  else if (secId === 'executive') renderExecutive();
+  showToast('Section regenerated ✓');
+}
+
+// ── APPROVE / SEND ────────────────────────
+function approveReport() {
+  if (!approved) {
+    approved = true;
+    const btn = document.getElementById('approve-btn');
+    btn.classList.add('approved');
+    btn.innerHTML = '✓ Approved';
+    document.getElementById('send-btn').classList.add('show');
+    document.getElementById('send-options').style.display = 'block';
+    document.getElementById('status-pill').className = 'status-pill status-approved';
+    document.getElementById('status-pill').textContent = 'Approved';
+    document.getElementById('ai-status-title').textContent = 'Report approved — ready to send';
+    document.getElementById('ai-status-sub').textContent = 'Choose recipient and send';
+    document.getElementById('ai-badge').textContent = 'Approved';
+    document.getElementById('ai-badge').style.background = 'var(--green-bg)';
+    document.getElementById('ai-badge').style.color = 'var(--green-dark)';
+    showToast('Report approved ✓');
+  }
+}
+
+function toggleSendOpt(val) {
+  sendTarget = val;
+  ['client','developer','both'].forEach(v => {
+    document.getElementById(`so-${v}`).classList.toggle('on', v===val);
+  });
+}
+
+async function sendReport() {
+  if (!approved) { showToast('Approve report first'); return; }
+  const btn = document.getElementById('send-btn');
+  btn.textContent = 'Sending...';
+  btn.disabled = true;
+
+  if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const insId = params.get('inspection');
+      if (insId) {
+        await fetch(`${SUPABASE_URL}/rest/v1/inspections?id=eq.${insId}`, {
+          method:'PATCH',
+          headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`,'Content-Type':'application/json'},
+          body: JSON.stringify({ report_approved:true, report_sent:true, report_draft: JSON.stringify(reportData.sections) })
+        });
+        if (reportData?.job?.invoice_no) {
+          await fetch(`${SUPABASE_URL}/rest/v1/jobs?invoice_no=eq.${reportData.job.invoice_no}`, {
+            method:'PATCH',
+            headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`,'Content-Type':'application/json'},
+            body: JSON.stringify({ status:'Completed' })
+          });
+        }
+      }
+    } catch(e) {}
+  }
+
+  document.getElementById('sent-to').textContent = sendTarget;
+  document.getElementById('success-overlay').classList.add('show');
+}
+
+function closeSuccess() { document.getElementById('success-overlay').classList.remove('show'); }
+
+function showRegenOverlay(text) {
+  document.getElementById('regen-text').textContent = text;
+  document.getElementById('regen-overlay').classList.add('show');
+}
+function hideRegenOverlay() { document.getElementById('regen-overlay').classList.remove('show'); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

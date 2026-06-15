@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Jabiru Ventures — Analytics</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --blue:#1477C6;--blue-dark:#0C5499;--blue-deeper:#093D72;
+  --blue-light:#EBF4FD;--blue-mid:#B8D8F5;--cyan:#1AB5D4;
+  --bg:#F0F5FA;--bg2:#FFFFFF;--bg3:#E8F0F8;
+  --border:#D0E2F0;--border2:#A8C8E4;
+  --text:#0A1E35;--text2:#3D6080;--text3:#7AA0BC;
+  --green:#0EA86A;--green-bg:#E4F7EF;--green-dark:#0A7A4C;
+  --amber:#D4820A;--amber-bg:#FDF2DC;
+  --red:#D93535;--red-bg:#FDEAEA;--red-dark:#A02020;
+  --purple:#6B50D6;--purple-bg:#EEEBFC;
+  --shadow:0 1px 4px rgba(10,30,53,.06),0 4px 16px rgba(10,30,53,.05);
+  --shadow-md:0 6px 24px rgba(10,30,53,.1);
+  --r:14px;--r-sm:9px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+
+/* HEADER */
+.header{background:var(--blue-deeper);padding:0 20px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(9,61,114,.45)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-mark{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;box-shadow:0 2px 8px rgba(26,181,212,.4)}
+.logo-text .n{font-size:14px;font-weight:700;color:#fff;letter-spacing:-.2px}
+.logo-text .s{font-size:10px;color:var(--blue-mid);text-transform:uppercase;letter-spacing:.4px}
+.header-right{display:flex;align-items:center;gap:8px}
+.hbtn{padding:7px 14px;border-radius:var(--r-sm);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;border:none;transition:all .15s;display:flex;align-items:center;gap:5px;letter-spacing:.2px}
+.hbtn-outline{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2)!important}
+.hbtn-outline:hover{background:rgba(255,255,255,.18)}
+.hbtn-primary{background:var(--cyan);color:#fff;box-shadow:0 2px 8px rgba(26,181,212,.35)}
+
+/* PERIOD TABS */
+.period-bar{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 4px rgba(10,30,53,.04)}
+.period-tabs{display:flex;gap:4px;background:var(--bg3);border-radius:var(--r-sm);padding:3px}
+.ptab{padding:5px 14px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;color:var(--text2);transition:all .15s;border:none;background:none;font-family:inherit;letter-spacing:.2px}
+.ptab.on{background:var(--bg2);color:var(--blue);box-shadow:var(--shadow)}
+.period-info{font-size:11px;color:var(--text3);font-weight:500}
+
+/* GRID */
+.grid{padding:16px 20px;display:flex;flex-direction:column;gap:14px}
+
+/* KPI ROW */
+.kpi-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.kpi-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:box-shadow .15s}
+.kpi-card:hover{box-shadow:var(--shadow-md)}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0}
+.kpi-card.blue::before{background:linear-gradient(90deg,var(--blue),var(--cyan))}
+.kpi-card.green::before{background:linear-gradient(90deg,var(--green),#1DD37F)}
+.kpi-card.amber::before{background:linear-gradient(90deg,var(--amber),#F5C842)}
+.kpi-card.purple::before{background:linear-gradient(90deg,var(--purple),#9B8EF0)}
+.kpi-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.kpi-icon{width:36px;height:36px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:16px}
+.kpi-change{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px}
+.kpi-change.up{background:var(--green-bg);color:var(--green-dark)}
+.kpi-change.down{background:var(--red-bg);color:var(--red-dark)}
+.kpi-val{font-size:22px;font-weight:800;font-family:'JetBrains Mono',monospace;line-height:1;margin-bottom:4px}
+.kpi-lbl{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.6px}
+.kpi-sub{font-size:10px;color:var(--text3);margin-top:3px}
+
+/* CHART CARD */
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}
+.cc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.cc-title{font-size:13px;font-weight:700;color:var(--text)}
+.cc-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.cc-badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--blue-light);color:var(--blue-dark)}
+.chart-wrap{position:relative}
+
+/* DONUT LEGEND */
+.donut-row{display:flex;gap:12px;align-items:flex-start}
+.donut-chart{flex-shrink:0;width:140px;height:140px}
+.donut-legend{flex:1;display:flex;flex-direction:column;gap:6px;justify-content:center}
+.dl-item{display:flex;align-items:center;gap:8px}
+.dl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dl-name{font-size:11px;color:var(--text2);flex:1}
+.dl-val{font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text)}
+.dl-pct{font-size:10px;color:var(--text3);margin-left:2px}
+
+/* BAR ROWS */
+.bar-rows{display:flex;flex-direction:column;gap:8px}
+.bar-row{display:flex;align-items:center;gap:10px}
+.bar-lbl{font-size:11px;font-weight:600;color:var(--text);width:90px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .6s ease}
+.bar-val{font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text);width:50px;text-align:right;flex-shrink:0}
+
+/* FUNNEL */
+.funnel{display:flex;flex-direction:column;gap:6px}
+.funnel-step{display:flex;align-items:center;gap:10px}
+.fs-name{font-size:11px;font-weight:600;color:var(--text);width:70px;flex-shrink:0}
+.fs-bar-wrap{flex:1;position:relative;height:30px;background:var(--bg3);border-radius:var(--r-sm);overflow:hidden}
+.fs-bar{height:100%;border-radius:var(--r-sm);display:flex;align-items:center;padding:0 10px;transition:width .6s ease}
+.fs-count{font-size:12px;font-weight:700;color:#fff;font-family:'JetBrains Mono',monospace}
+.fs-pct{font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text);width:40px;text-align:right;flex-shrink:0}
+.fs-arrow{font-size:10px;color:var(--text3);width:14px;text-align:center;flex-shrink:0}
+
+/* AI INSIGHTS */
+.insights-card{background:linear-gradient(135deg,var(--blue-deeper) 0%,#0d3a6b 100%);border-radius:var(--r);padding:16px;box-shadow:var(--shadow-md);color:#fff}
+.ic-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.ic-icon{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:18px}
+.ic-title{font-size:13px;font-weight:700}
+.ic-sub{font-size:10px;color:var(--blue-mid);margin-top:2px}
+.insights-list{display:flex;flex-direction:column;gap:8px}
+.insight-item{background:rgba(255,255,255,.09);border-radius:var(--r-sm);padding:11px 13px;border:1px solid rgba(255,255,255,.1);display:flex;gap:10px;align-items:flex-start}
+.insight-emoji{font-size:16px;flex-shrink:0;margin-top:1px}
+.insight-text{font-size:12px;color:rgba(255,255,255,.9);line-height:1.5}
+.insight-text strong{color:#fff}
+.regen-insights-btn{margin-top:10px;width:100%;padding:9px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:var(--r-sm);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s}
+.regen-insights-btn:hover{background:rgba(255,255,255,.2)}
+
+/* TOP TABLE */
+.top-table{width:100%;border-collapse:collapse}
+.top-table td{padding:8px 6px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:middle}
+.top-table tr:last-child td{border-bottom:none}
+.top-table tr:hover td{background:var(--bg3)}
+.rank-num{font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--text3);width:24px}
+.rank-name{font-weight:600;color:var(--text)}
+.rank-val{font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--blue);text-align:right}
+.rank-tag{font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px}
+
+/* LOADING */
+.loading-shimmer{background:linear-gradient(90deg,var(--bg3) 25%,var(--bg2) 50%,var(--bg3) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:var(--r-sm);height:20px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--blue-deeper);color:#fff;padding:9px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 16px rgba(9,61,114,.3)}
+.toast.show{opacity:1}
+
+@media(min-width:600px){
+  .kpi-row{grid-template-columns:repeat(4,1fr)}
+  .grid{padding:20px 24px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-mark">JV</div>
+    <div class="logo-text">
+      <div class="n">Jabiru Ventures</div>
+      <div class="s">Analytics</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="hbtn hbtn-outline" onclick="window.location.href='index.html'">← CRM</button>
+    <button class="hbtn hbtn-primary" onclick="exportCSV()">⬇ Export</button>
+  </div>
+</div>
+
+<div class="period-bar">
+  <div class="period-tabs">
+    <button class="ptab" onclick="setPeriod(1,this)">1M</button>
+    <button class="ptab" onclick="setPeriod(3,this)">3M</button>
+    <button class="ptab" onclick="setPeriod(6,this)">6M</button>
+    <button class="ptab" onclick="setPeriod(12,this)">1Y</button>
+    <button class="ptab on" onclick="setPeriod(0,this)">All</button>
+  </div>
+  <div class="period-info" id="period-info">Last 3 months</div>
+</div>
+
+<div class="grid" id="main-grid">
+  <!-- Rendered by JS -->
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL      = 'https://siglqixiefvrxfvpxttj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_3LA7_L8nCwysXKAI7-0Faw_v6m7iTL_';
+const CLAUDE_API_KEY    = 'YOUR_CLAUDE_API_KEY';
+
+let allData    = { customers:[], properties:[], jobs:[] };
+let filtered   = { customers:[], properties:[], jobs:[] };
+let currentPeriod = 0;
+let charts     = {};
+
+const PALETTE = ['#1477C6','#1AB5D4','#0EA86A','#D4820A','#6B50D6','#D93535','#0C5499','#F5C842'];
+
+// ── DEMO DATA ────────────────────────────
+const DEMO_CUSTOMERS = [
+  {id:'1',full_name:'Ahmad Rizal',race:'Malay',lead_source:'Google SEO',created_at:'2026-01-10'},
+  {id:'2',full_name:'Tan Wei Ming',race:'Chinese',lead_source:'WhatsApp',created_at:'2026-01-18'},
+  {id:'3',full_name:'Priya Nair',race:'Indian',lead_source:'Referral',created_at:'2026-02-02'},
+  {id:'4',full_name:'Lim Siew Ching',race:'Chinese',lead_source:'Developer',created_at:'2026-02-14'},
+  {id:'5',full_name:'Mohd Faizal',race:'Malay',lead_source:'Google SEO',created_at:'2026-02-22'},
+  {id:'6',full_name:'Nurul Izzah',race:'Malay',lead_source:'Referral',created_at:'2026-03-05'},
+  {id:'7',full_name:'David Lim',race:'Chinese',lead_source:'Google SEO',created_at:'2026-03-14'},
+  {id:'8',full_name:'Kavitha Raj',race:'Indian',lead_source:'WhatsApp',created_at:'2026-03-20'},
+  {id:'9',full_name:'Azmi Hassan',race:'Malay',lead_source:'Developer',created_at:'2026-04-01'},
+  {id:'10',full_name:'Chan Mei Ling',race:'Chinese',lead_source:'Referral',created_at:'2026-04-10'},
+  {id:'11',full_name:'Farah Idris',race:'Malay',lead_source:'Google SEO',created_at:'2026-05-18'},
+  {id:'12',full_name:'Rajan Pillai',race:'Indian',lead_source:'Google SEO',created_at:'2026-05-25'},
+];
+const DEMO_PROPERTIES = [
+  {id:'1',customer_id:'1',city:'Setapak',state:'Kuala Lumpur',property_type:'Condo'},
+  {id:'2',customer_id:'2',city:'Ampang',state:'Selangor',property_type:'Landed'},
+  {id:'3',customer_id:'3',city:'Petaling Jaya',state:'Selangor',property_type:'Apartment'},
+  {id:'4',customer_id:'4',city:'Cheras',state:'Kuala Lumpur',property_type:'Condo'},
+  {id:'5',customer_id:'5',city:'Shah Alam',state:'Selangor',property_type:'Landed'},
+  {id:'6',customer_id:'6',city:'Subang Jaya',state:'Selangor',property_type:'Condo'},
+  {id:'7',customer_id:'7',city:'Mont Kiara',state:'Kuala Lumpur',property_type:'Condo'},
+  {id:'8',customer_id:'8',city:'Cheras',state:'Kuala Lumpur',property_type:'Apartment'},
+  {id:'9',customer_id:'9',city:'Petaling Jaya',state:'Selangor',property_type:'Commercial'},
+  {id:'10',customer_id:'10',city:'Ampang',state:'Selangor',property_type:'Condo'},
+  {id:'11',customer_id:'11',city:'Shah Alam',state:'Selangor',property_type:'Landed'},
+  {id:'12',customer_id:'12',city:'Setapak',state:'Kuala Lumpur',property_type:'Apartment'},
+];
+const DEMO_JOBS = [
+  {id:'1',customer_id:'1',property_id:'1',status:'Completed',price:850,invoice_no:'JV-2026-0001',inspection_date:'2026-01-15',created_at:'2026-01-10'},
+  {id:'2',customer_id:'2',property_id:'2',status:'Completed',price:1200,invoice_no:'JV-2026-0002',inspection_date:'2026-01-22',created_at:'2026-01-18'},
+  {id:'3',customer_id:'3',property_id:'3',status:'Completed',price:750,invoice_no:'JV-2026-0003',inspection_date:'2026-02-08',created_at:'2026-02-02'},
+  {id:'4',customer_id:'4',property_id:'4',status:'Completed',price:900,invoice_no:'JV-2026-0004',inspection_date:'2026-02-18',created_at:'2026-02-14'},
+  {id:'5',customer_id:'5',property_id:'5',status:'Inspected',price:1500,invoice_no:'JV-2026-0005',inspection_date:'2026-02-26',created_at:'2026-02-22'},
+  {id:'6',customer_id:'6',property_id:'6',status:'Completed',price:950,invoice_no:'JV-2026-0006',inspection_date:'2026-03-10',created_at:'2026-03-05'},
+  {id:'7',customer_id:'7',property_id:'7',status:'Completed',price:1100,invoice_no:'JV-2026-0007',inspection_date:'2026-03-18',created_at:'2026-03-14'},
+  {id:'8',customer_id:'8',property_id:'8',status:'Booked',price:800,invoice_no:'JV-2026-0008',inspection_date:'2026-04-25',created_at:'2026-03-20'},
+  {id:'9',customer_id:'9',property_id:'9',status:'Won',price:2200,invoice_no:'JV-2026-0009',inspection_date:'2026-05-05',created_at:'2026-04-01'},
+  {id:'10',customer_id:'10',property_id:'10',status:'Completed',price:880,invoice_no:'JV-2026-0010',inspection_date:'2026-04-14',created_at:'2026-04-10'},
+  {id:'11',customer_id:'11',property_id:'11',status:'Lead',price:1300,invoice_no:null,inspection_date:null,created_at:'2026-05-18'},
+  {id:'12',customer_id:'12',property_id:'12',status:'Booked',price:700,invoice_no:'JV-2026-0011',inspection_date:'2026-06-10',created_at:'2026-05-25'},
+];
+
+window.addEventListener('load', async () => {
+  await loadData();
+  applyPeriodFilter();
+  renderAll();
+});
+
+async function loadData() {
+  if (SUPABASE_URL === 'YOUR_SUPABASE_URL') {
+    allData = { customers: DEMO_CUSTOMERS, properties: DEMO_PROPERTIES, jobs: DEMO_JOBS };
+    return;
+  }
+  try {
+    const [c,p,j] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/customers?select=*`,   {headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`}}).then(r=>r.json()),
+      fetch(`${SUPABASE_URL}/rest/v1/properties?select=*`,  {headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`}}).then(r=>r.json()),
+      fetch(`${SUPABASE_URL}/rest/v1/jobs?select=*&order=created_at.desc`,{headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`}}).then(r=>r.json()),
+    ]);
+    allData = { customers: c||[], properties: p||[], jobs: j||[] };
+  } catch(e) {
+    allData = { customers: DEMO_CUSTOMERS, properties: DEMO_PROPERTIES, jobs: DEMO_JOBS };
+  }
+}
+
+function applyPeriodFilter() {
+  if (currentPeriod === 0) { filtered = {...allData}; return; }
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - currentPeriod);
+  filtered.jobs      = allData.jobs.filter(j => new Date(j.created_at) >= cutoff);
+  filtered.customers = allData.customers.filter(c => new Date(c.created_at) >= cutoff);
+  filtered.properties = allData.properties.filter(p => filtered.customers.some(c => c.id === p.customer_id));
+}
+
+function setPeriod(months, btn) {
+  currentPeriod = months;
+  document.querySelectorAll('.ptab').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  const labels = {1:'Last month',3:'Last 3 months',6:'Last 6 months',12:'Last year',0:'All time'};
+  document.getElementById('period-info').textContent = labels[months] || 'Custom period';
+  applyPeriodFilter();
+  destroyCharts();
+  renderAll();
+}
+
+function destroyCharts() {
+  Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
+  charts = {};
+}
+
+function renderAll() {
+  const grid = document.getElementById('main-grid');
+  grid.innerHTML = `
+    <div id="kpi-section"></div>
+    <div id="revenue-section"></div>
+    <div id="charts-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"></div>
+    <div id="funnel-section"></div>
+    <div id="bars-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px"></div>
+    <div id="top-section"></div>
+    <div id="insights-section"></div>
+  `;
+  renderKPIs();
+  renderRevenueChart();
+  renderDonutCharts();
+  renderFunnel();
+  renderBarCharts();
+  renderTopTables();
+  renderInsights();
+}
+
+// ── KPIs ──────────────────────────────────
+function renderKPIs() {
+  const jobs      = filtered.jobs;
+  const customers = filtered.customers;
+  const completed = jobs.filter(j => j.status === 'Completed');
+  const revenue   = completed.reduce((s,j) => s + parseFloat(j.price||0), 0);
+  const active    = jobs.filter(j => ['Won','Booked','Inspected'].includes(j.status)).length;
+  const convRate  = jobs.length > 0 ? Math.round((completed.length / jobs.length) * 100) : 0;
+  const avgValue  = completed.length > 0 ? Math.round(revenue / completed.length) : 0;
+
+  document.getElementById('kpi-section').innerHTML = `<div class="kpi-row">
+    <div class="kpi-card blue">
+      <div class="kpi-top">
+        <div class="kpi-icon" style="background:var(--blue-light)">💰</div>
+        <div class="kpi-change up">↑ 18%</div>
+      </div>
+      <div class="kpi-val" style="color:var(--blue)">RM${revenue.toLocaleString('en-MY')}</div>
+      <div class="kpi-lbl">Total revenue</div>
+      <div class="kpi-sub">${completed.length} completed jobs</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-top">
+        <div class="kpi-icon" style="background:var(--green-bg)">👥</div>
+        <div class="kpi-change up">↑ 12%</div>
+      </div>
+      <div class="kpi-val" style="color:var(--green)">${customers.length}</div>
+      <div class="kpi-lbl">New clients</div>
+      <div class="kpi-sub">${active} active jobs</div>
+    </div>
+    <div class="kpi-card amber">
+      <div class="kpi-top">
+        <div class="kpi-icon" style="background:var(--amber-bg)">📊</div>
+        <div class="kpi-change up">↑ 5%</div>
+      </div>
+      <div class="kpi-val" style="color:var(--amber)">${convRate}%</div>
+      <div class="kpi-lbl">Conversion rate</div>
+      <div class="kpi-sub">Lead → Completed</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-top">
+        <div class="kpi-icon" style="background:var(--purple-bg)">⭐</div>
+        <div class="kpi-change up">↑ 8%</div>
+      </div>
+      <div class="kpi-val" style="color:var(--purple)">RM${avgValue.toLocaleString('en-MY')}</div>
+      <div class="kpi-lbl">Avg job value</div>
+      <div class="kpi-sub">Per inspection</div>
+    </div>
+  </div>`;
+}
+
+// ── REVENUE CHART ─────────────────────────
+function renderRevenueChart() {
+  const months = getMonthsArray();
+  const revenueByMonth = months.map(m => {
+    return filtered.jobs
+      .filter(j => j.status === 'Completed' && j.created_at?.startsWith(m))
+      .reduce((s,j) => s + parseFloat(j.price||0), 0);
+  });
+  const jobsByMonth = months.map(m => filtered.jobs.filter(j => j.created_at?.startsWith(m)).length);
+  const labels = months.map(m => { const [y,mo] = m.split('-'); return new Date(y, parseInt(mo)-1).toLocaleDateString('en-MY',{month:'short',year:'2-digit'}); });
+
+  document.getElementById('revenue-section').innerHTML = `
+    <div class="chart-card">
+      <div class="cc-head">
+        <div><div class="cc-title">Revenue over time</div><div class="cc-sub">Monthly revenue (RM)</div></div>
+        <div class="cc-badge">RM${revenueByMonth.reduce((a,b)=>a+b,0).toLocaleString('en-MY')}</div>
+      </div>
+      <div class="chart-wrap" style="height:200px"><canvas id="revenue-chart"></canvas></div>
+    </div>`;
+
+  requestAnimationFrame(() => {
+    const ctx = document.getElementById('revenue-chart')?.getContext('2d');
+    if (!ctx) return;
+    charts.revenue = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label:'Revenue (RM)', data: revenueByMonth, backgroundColor: 'rgba(20,119,198,.8)', borderRadius: 6, borderSkipped: false },
+          { label:'Jobs', data: jobsByMonth, type:'line', borderColor: var_color('--cyan'), backgroundColor:'transparent', tension:.4, pointBackgroundColor: var_color('--cyan'), pointRadius: 4, yAxisID:'y1' }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend:{ display:false } },
+        scales: {
+          x: { grid:{ display:false }, ticks:{ font:{size:10}, color:'#7AA0BC' } },
+          y: { grid:{ color:'rgba(10,30,53,.05)' }, ticks:{ font:{size:10}, color:'#7AA0BC', callback: v=>'RM'+v.toLocaleString() } },
+          y1: { position:'right', grid:{ display:false }, ticks:{ font:{size:10}, color:'#7AA0BC' } }
+        }
+      }
+    });
+  });
+}
+
+function getMonthsArray() {
+  const months = [];
+  const n = currentPeriod === 0 ? 12 : currentPeriod;
+  for (let i = n-1; i >= 0; i--) {
+    const d = new Date();
+    d.setMonth(d.getMonth() - i);
+    months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  }
+  return months;
+}
+
+// ── DONUT CHARTS ──────────────────────────
+function renderDonutCharts() {
+  const propTypes = countBy(filtered.properties, 'property_type');
+  const sources   = countBy(filtered.customers, 'lead_source');
+
+  document.getElementById('charts-row').innerHTML = `
+    <div class="chart-card">
+      <div class="cc-head"><div><div class="cc-title">Property types</div><div class="cc-sub">By inspection count</div></div></div>
+      <div class="donut-row">
+        <div class="donut-chart"><canvas id="proptype-chart"></canvas></div>
+        <div class="donut-legend" id="proptype-legend"></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="cc-head"><div><div class="cc-title">Lead sources</div><div class="cc-sub">Where clients come from</div></div></div>
+      <div class="donut-row">
+        <div class="donut-chart"><canvas id="source-chart"></canvas></div>
+        <div class="donut-legend" id="source-legend"></div>
+      </div>
+    </div>`;
+
+  requestAnimationFrame(() => {
+    renderDonut('proptype-chart', 'proptype-legend', propTypes);
+    renderDonut('source-chart', 'source-legend', sources);
+  });
+}
+
+function renderDonut(canvasId, legendId, data) {
+  const ctx = document.getElementById(canvasId)?.getContext('2d');
+  if (!ctx) return;
+  const labels = Object.keys(data);
+  const values = Object.values(data);
+  const total  = values.reduce((a,b)=>a+b,0);
+  const chart  = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels, datasets:[{ data:values, backgroundColor:PALETTE, borderWidth:0, hoverOffset:4 }] },
+    options: {
+      responsive:true, maintainAspectRatio:true, cutout:'68%',
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c => ` ${c.label}: ${c.raw} (${Math.round(c.raw/total*100)}%)` } } }
+    }
+  });
+  charts[canvasId] = chart;
+  const legend = document.getElementById(legendId);
+  if (legend) {
+    legend.innerHTML = labels.map((l,i) => `
+      <div class="dl-item">
+        <div class="dl-dot" style="background:${PALETTE[i]}"></div>
+        <div class="dl-name">${l}</div>
+        <div class="dl-val">${values[i]}<span class="dl-pct">(${Math.round(values[i]/total*100)}%)</span></div>
+      </div>`).join('');
+  }
+}
+
+// ── FUNNEL ────────────────────────────────
+function renderFunnel() {
+  const statuses = ['Lead','Won','Booked','Inspected','Completed'];
+  const colors   = ['#8AADC6','#0EA86A','#1477C6','#D4820A','#6B50D6'];
+  const counts   = statuses.map(s => allData.jobs.filter(j => j.status === s).length);
+  const total    = allData.jobs.length || 1;
+  const max      = Math.max(...counts, 1);
+
+  document.getElementById('funnel-section').innerHTML = `
+    <div class="chart-card">
+      <div class="cc-head"><div><div class="cc-title">Job pipeline funnel</div><div class="cc-sub">All time — ${allData.jobs.length} total jobs</div></div></div>
+      <div class="funnel">
+        ${statuses.map((s,i) => {
+          const pct = Math.round(counts[i]/total*100);
+          const dropPct = i > 0 && counts[i-1] > 0 ? Math.round(counts[i]/counts[i-1]*100) : null;
+          return `
+            ${i > 0 ? `<div class="fs-arrow" style="text-align:center;color:var(--text3);font-size:11px;padding-left:78px">↓ ${dropPct !== null ? dropPct+'% from previous' : '—'}</div>` : ''}
+            <div class="funnel-step">
+              <div class="fs-name">${s}</div>
+              <div class="fs-bar-wrap">
+                <div class="fs-bar" style="width:${Math.max(counts[i]/max*100,8)}%;background:${colors[i]}">
+                  <span class="fs-count">${counts[i]}</span>
+                </div>
+              </div>
+              <div class="fs-pct">${Math.round(counts[i]/total*100)}%</div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+// ── BAR CHARTS ────────────────────────────
+function renderBarCharts() {
+  const cities = countBy(filtered.properties, 'city');
+  const races  = countBy(filtered.customers, 'race');
+  const maxCity = Math.max(...Object.values(cities), 1);
+  const maxRace = Math.max(...Object.values(races), 1);
+
+  document.getElementById('bars-row').innerHTML = `
+    <div class="chart-card">
+      <div class="cc-head"><div><div class="cc-title">Top cities</div><div class="cc-sub">By job count</div></div></div>
+      <div class="bar-rows">
+        ${Object.entries(cities).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([city,count],i) => `
+          <div class="bar-row">
+            <div class="bar-lbl">${city}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${count/maxCity*100}%;background:${PALETTE[i%PALETTE.length]}"></div></div>
+            <div class="bar-val">${count}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="cc-head"><div><div class="cc-title">Client race</div><div class="cc-sub">Demographics breakdown</div></div></div>
+      <div class="bar-rows">
+        ${Object.entries(races).sort((a,b)=>b[1]-a[1]).map(([race,count],i) => `
+          <div class="bar-row">
+            <div class="bar-lbl">${race||'Unknown'}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${count/maxRace*100}%;background:${PALETTE[i%PALETTE.length]}"></div></div>
+            <div class="bar-val">${count}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ── TOP TABLES ────────────────────────────
+function renderTopTables() {
+  const topJobs = [...filtered.jobs]
+    .filter(j => j.status === 'Completed')
+    .sort((a,b) => parseFloat(b.price||0) - parseFloat(a.price||0))
+    .slice(0,5)
+    .map(j => {
+      const cust = allData.customers.find(c => c.id === j.customer_id);
+      const prop = allData.properties.find(p => p.id === j.property_id);
+      return { name: cust?.full_name||'—', type: prop?.property_type||'—', city: prop?.city||'—', price: j.price, date: j.inspection_date };
+    });
+
+  document.getElementById('top-section').innerHTML = `
+    <div class="chart-card">
+      <div class="cc-head"><div><div class="cc-title">Top jobs by value</div><div class="cc-sub">Highest value completed inspections</div></div></div>
+      <table class="top-table">
+        <tbody>
+          ${topJobs.map((j,i) => `<tr>
+            <td><div class="rank-num">${String(i+1).padStart(2,'0')}</div></td>
+            <td><div class="rank-name">${j.name}</div><div style="font-size:10px;color:var(--text3)">${j.city}</div></td>
+            <td><span class="rank-tag" style="background:var(--blue-light);color:var(--blue-dark)">${j.type}</span></td>
+            <td><div class="rank-val">RM${parseFloat(j.price||0).toLocaleString('en-MY')}</div></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ── AI INSIGHTS ───────────────────────────
+function renderInsights() {
+  const insights = generateInsights();
+  document.getElementById('insights-section').innerHTML = `
+    <div class="insights-card">
+      <div class="ic-head">
+        <div class="ic-icon">🤖</div>
+        <div>
+          <div class="ic-title">AI Business Insights</div>
+          <div class="ic-sub">Patterns spotted in your data</div>
+        </div>
+      </div>
+      <div class="insights-list" id="insights-list">
+        ${insights.map(ins => `
+          <div class="insight-item">
+            <div class="insight-emoji">${ins.emoji}</div>
+            <div class="insight-text">${ins.text}</div>
+          </div>`).join('')}
+      </div>
+      ${CLAUDE_API_KEY !== 'YOUR_CLAUDE_API_KEY' ? `<button class="regen-insights-btn" onclick="regenInsights()">🤖 Generate deeper AI insights</button>` : ''}
+    </div>`;
+}
+
+function generateInsights() {
+  const jobs     = filtered.jobs;
+  const customers = filtered.customers;
+  const completed = jobs.filter(j => j.status === 'Completed');
+  const revenue   = completed.reduce((s,j) => s+parseFloat(j.price||0), 0);
+  const propTypes = countBy(filtered.properties, 'property_type');
+  const sources   = countBy(customers, 'lead_source');
+  const cities    = countBy(filtered.properties, 'city');
+  const topType   = Object.entries(propTypes).sort((a,b)=>b[1]-a[1])[0];
+  const topSource = Object.entries(sources).sort((a,b)=>b[1]-a[1])[0];
+  const topCity   = Object.entries(cities).sort((a,b)=>b[1]-a[1])[0];
+  const convRate  = jobs.length > 0 ? Math.round(completed.length/jobs.length*100) : 0;
+  const avgValue  = completed.length > 0 ? Math.round(revenue/completed.length) : 0;
+  const insights  = [];
+
+  if (topType) insights.push({ emoji:'🏠', text:`<strong>${topType[0]}</strong> is your most inspected property type at <strong>${Math.round(topType[1]/Object.values(propTypes).reduce((a,b)=>a+b,1)*100)}%</strong> of all jobs. Consider packaging specialised ${topType[0].toLowerCase()} inspection deals.` });
+  if (topSource) insights.push({ emoji:'📱', text:`<strong>${topSource[0]}</strong> is your top lead source with <strong>${topSource[1]} clients</strong>. Double down on this channel — it's already working.` });
+  if (topCity) insights.push({ emoji:'📍', text:`<strong>${topCity[0]}</strong> generates the most jobs. You could target property agents and developers in this area directly for B2B leads.` });
+  if (convRate < 50) insights.push({ emoji:'⚠️', text:`Your lead-to-completion rate is <strong>${convRate}%</strong>. Consider following up faster on Won deals — delays between Won and Booked often cause drop-offs.` });
+  else insights.push({ emoji:'✅', text:`Your conversion rate of <strong>${convRate}%</strong> is strong. Focus on increasing lead volume — your closing process is working well.` });
+  if (avgValue > 0) insights.push({ emoji:'💡', text:`Average job value is <strong>RM${avgValue.toLocaleString()}</strong>. Commercial properties could push this above RM2,000 — consider targeted outreach to developers and property managers.` });
+
+  return insights.slice(0,4);
+}
+
+async function regenInsights() {
+  const jobs = filtered.jobs;
+  const completed = jobs.filter(j=>j.status==='Completed');
+  const revenue = completed.reduce((s,j)=>s+parseFloat(j.price||0),0);
+  const propTypes = countBy(filtered.properties,'property_type');
+  const sources = countBy(filtered.customers,'lead_source');
+
+  const listEl = document.getElementById('insights-list');
+  if (listEl) listEl.innerHTML = `<div style="display:flex;gap:6px;align-items:center;color:rgba(255,255,255,.6);font-size:12px;padding:8px 0"><div style="width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:pulse 1s infinite"></div> AI analyzing your business data...</div>`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':CLAUDE_API_KEY,'anthropic-version':'2023-06-01'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:600,
+        messages:[{role:'user',content:`You are a business analyst for Jabiru Ventures, a Malaysian house inspection company.
+Data: ${jobs.length} total jobs, ${completed.length} completed, RM${revenue.toLocaleString()} revenue.
+Property types: ${JSON.stringify(propTypes)}. Lead sources: ${JSON.stringify(sources)}.
+Give exactly 4 specific, actionable business insights. Respond ONLY with JSON array:
+[{"emoji":"...","text":"...with <strong>highlights</strong>"}]`}]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text?.trim()||'';
+    const parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
+    if (listEl) listEl.innerHTML = parsed.map(ins=>`<div class="insight-item"><div class="insight-emoji">${ins.emoji}</div><div class="insight-text">${ins.text}</div></div>`).join('');
+  } catch(e) {
+    if (listEl) listEl.innerHTML = '<div class="insight-item"><div class="insight-emoji">⚠️</div><div class="insight-text">Could not connect to AI. Check your Claude API key.</div></div>';
+  }
+}
+
+// ── EXPORT CSV ───────────────────────────
+function exportCSV() {
+  const rows = [['Name','Race','Source','Property Type','City','State','Status','Price','Date','Invoice']];
+  allData.jobs.forEach(j => {
+    const c = allData.customers.find(x=>x.id===j.customer_id)||{};
+    const p = allData.properties.find(x=>x.id===j.property_id)||{};
+    rows.push([c.full_name||'',c.race||'',c.lead_source||'',p.property_type||'',p.city||'',p.state||'',j.status||'',j.price||'',j.inspection_date||'',j.invoice_no||'']);
+  });
+  const csv = rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download = `jabiru-analytics-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast('CSV exported ✓');
+}
+
+// ── HELPERS ───────────────────────────────
+function countBy(arr, key) {
+  return arr.reduce((acc, item) => {
+    const v = item[key] || 'Unknown';
+    acc[v] = (acc[v]||0) + 1;
+    return acc;
+  }, {});
+}
+
+function var_color(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

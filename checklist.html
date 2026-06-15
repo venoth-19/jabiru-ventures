@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Jabiru Ventures — Site Inspection</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#1477C6;--blue-dark:#0C5499;--blue-deeper:#093D72;
+  --blue-light:#EBF4FD;--blue-mid:#B8D8F5;--cyan:#1AB5D4;
+  --bg:#F2F6FA;--bg2:#FFFFFF;--bg3:#EBF1F7;
+  --border:#D4E3EF;--border2:#AAC9E3;
+  --text:#0C2340;--text2:#456B8C;--text3:#8AADC6;
+  --green:#0EA86A;--green-bg:#E4F7EF;--green-dark:#0A7A4C;
+  --amber:#D4820A;--amber-bg:#FDF2DC;--amber-dark:#8A5A0A;
+  --red:#D93535;--red-bg:#FDEAEA;--red-dark:#A02020;
+  --shadow:0 1px 3px rgba(12,35,64,.07),0 4px 12px rgba(12,35,64,.05);
+  --shadow-md:0 4px 16px rgba(12,35,64,.12);
+  --r:12px;--r-sm:8px;--r-xs:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;padding-bottom:130px}
+
+.header{background:var(--blue-deeper);padding:12px 16px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(9,61,114,.4)}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.logo{display:flex;align-items:center;gap:8px}
+.logo-mark{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff}
+.logo-name{font-size:13px;font-weight:700;color:#fff}
+.logo-sub{font-size:10px;color:var(--blue-mid);text-transform:uppercase;letter-spacing:.4px}
+
+.score-pill{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);padding:5px 11px;border-radius:20px;border:1px solid rgba(255,255,255,.18)}
+.score-val{font-size:14px;font-weight:800;color:#fff;font-family:'JetBrains Mono',monospace}
+.score-lbl{font-size:9px;color:var(--blue-mid);text-transform:uppercase;letter-spacing:.4px}
+
+.network-row{display:flex;gap:8px;align-items:center;font-size:10px;color:var(--blue-mid);font-weight:500}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--text3)}
+.dot.online{background:#1DD37F;box-shadow:0 0 8px rgba(29,211,127,.6)}
+
+.progress-bar{height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--blue));border-radius:2px;transition:width .4s}
+
+.job-card{margin:14px 16px;background:var(--bg2);border-radius:var(--r);border:1px solid var(--border);padding:14px;box-shadow:var(--shadow)}
+.job-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.job-title{font-size:15px;font-weight:700;color:var(--text)}
+.job-inv{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text3);background:var(--bg3);padding:3px 9px;border-radius:20px;border:1px solid var(--border)}
+.job-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.meta-item{background:var(--bg3);border-radius:var(--r-sm);padding:8px 10px;border:1px solid var(--border)}
+.meta-lbl{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.meta-val{font-size:12px;font-weight:600;color:var(--text)}
+
+.section-nav{padding:12px 16px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:78px;z-index:90}
+.section-nav::-webkit-scrollbar{display:none}
+.snav-btn{flex-shrink:0;padding:7px 12px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--bg2);color:var(--text2);font-family:inherit;transition:all .15s;white-space:nowrap;display:flex;align-items:center;gap:5px}
+.snav-btn.on{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(20,119,198,.3)}
+.snav-btn.done{background:var(--green-bg);border-color:var(--green);color:var(--green-dark)}
+.snav-count{font-size:9px;font-family:'JetBrains Mono',monospace;padding:1px 5px;border-radius:10px;background:rgba(255,255,255,.25)}
+.snav-btn:not(.on) .snav-count{background:var(--bg3);color:var(--text3)}
+
+.content{padding:0 16px}
+
+.section-panel{display:none}
+.section-panel.on{display:block}
+.section-header{margin-bottom:12px;padding:12px 14px;background:var(--blue-deeper);border-radius:var(--r);color:#fff;display:flex;align-items:center;justify-content:space-between}
+.sh-left{flex:1}
+.sh-title{font-size:15px;font-weight:700;margin-bottom:3px}
+.sh-sub{font-size:11px;color:var(--blue-mid)}
+.sh-score{font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.12);padding:6px 12px;border-radius:8px}
+
+.area-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow);transition:border-color .15s}
+.area-card.has-defects{border-color:var(--amber)}
+.area-card.has-critical{border-color:var(--red)}
+.area-head{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .15s}
+.area-head:hover{background:var(--bg3)}
+.area-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.area-icon{width:34px;height:34px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;background:var(--blue-light)}
+.area-info{min-width:0;flex:1}
+.area-name{font-size:13px;font-weight:700;color:var(--text)}
+.area-count{font-size:10px;color:var(--text2);margin-top:1px}
+.area-right{display:flex;align-items:center;gap:8px}
+.area-status{width:8px;height:8px;border-radius:50%;background:var(--border)}
+.area-status.ok{background:var(--green)}
+.area-status.issues{background:var(--amber)}
+.area-status.critical{background:var(--red)}
+.area-toggle{font-size:11px;color:var(--text3);transition:transform .2s}
+.area-toggle.open{transform:rotate(180deg)}
+.area-body{display:none;padding:12px 14px;border-top:1px solid var(--border);background:var(--bg)}
+.area-body.open{display:block}
+
+.condition-wrap{margin-bottom:12px}
+.condition-label{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.condition-opts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.copt{padding:8px 4px;border-radius:var(--r-sm);border:1.5px solid var(--border);cursor:pointer;text-align:center;transition:all .15s;background:var(--bg2)}
+.copt-icon{font-size:14px;margin-bottom:2px}
+.copt-label{font-size:9px;font-weight:700;letter-spacing:.3px}
+.copt.selected-good{border-color:var(--green);background:var(--green-bg)}
+.copt.selected-good .copt-label{color:var(--green-dark)}
+.copt.selected-minor{border-color:var(--amber);background:var(--amber-bg)}
+.copt.selected-minor .copt-label{color:var(--amber-dark)}
+.copt.selected-major{border-color:#E07008;background:#FEF0DC}
+.copt.selected-major .copt-label{color:#8A4A0A}
+.copt.selected-critical{border-color:var(--red);background:var(--red-bg)}
+.copt.selected-critical .copt-label{color:var(--red-dark)}
+
+.defects-list{margin-bottom:10px}
+.defect-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:6px}
+.defect-item:last-child{margin-bottom:0}
+.defect-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px}
+.defect-sev{font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+.sev-critical{background:var(--red-bg);color:var(--red-dark)}
+.sev-major{background:#FEF0DC;color:#8A4A0A}
+.sev-minor{background:var(--amber-bg);color:var(--amber-dark)}
+.defect-desc{font-size:12px;color:var(--text);line-height:1.4;flex:1}
+.defect-del{width:22px;height:22px;border-radius:50%;background:var(--red-bg);border:none;color:var(--red);font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.defect-photo{width:60px;height:60px;border-radius:var(--r-xs);object-fit:cover;margin-top:6px;border:1px solid var(--border)}
+.defect-tag{font-size:10px;color:var(--text3);margin-top:4px;font-style:italic;display:flex;align-items:center;gap:4px}
+
+.add-defect-form{background:var(--blue-light);border:1px solid var(--blue-mid);border-radius:var(--r-sm);padding:12px}
+.add-defect-title{font-size:11px;font-weight:700;color:var(--blue-dark);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
+.sev-select{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:10px}
+.sev-opt{padding:6px 4px;border-radius:var(--r-xs);border:1.5px solid var(--border);cursor:pointer;text-align:center;font-size:10px;font-weight:700;background:var(--bg2);transition:all .15s;font-family:inherit}
+.sev-opt.on-critical{border-color:var(--red);background:var(--red-bg);color:var(--red-dark)}
+.sev-opt.on-major{border-color:#E07008;background:#FEF0DC;color:#8A4A0A}
+.sev-opt.on-minor{border-color:var(--amber);background:var(--amber-bg);color:var(--amber-dark)}
+.fi{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-xs);color:var(--text);font-family:inherit;font-size:13px;padding:9px 11px;outline:none;transition:border-color .2s;margin-bottom:8px}
+.fi:focus{border-color:var(--blue)}
+.fi::placeholder{color:var(--text3)}
+
+.photo-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.photo-btn{flex:1;padding:9px;border-radius:var(--r-xs);border:1.5px dashed var(--blue-mid);background:var(--bg2);color:var(--blue);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
+.photo-btn:hover{background:var(--blue-light);border-color:var(--blue)}
+.photo-preview-wrap{position:relative;width:56px;height:56px;flex-shrink:0}
+.photo-preview{width:100%;height:100%;border-radius:var(--r-xs);object-fit:cover;border:2px solid var(--blue-mid);display:none}
+.photo-preview-wrap.show .photo-preview{display:block}
+.annotate-btn{position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;border:2px solid #fff;font-size:11px;cursor:pointer;display:none;align-items:center;justify-content:center}
+.photo-preview-wrap.show .annotate-btn{display:flex}
+
+.add-defect-btn{width:100%;background:var(--blue);color:#fff;border:none;border-radius:var(--r-xs);padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s}
+.add-defect-btn:hover{background:var(--blue-dark)}
+
+.notes-wrap{margin-top:10px}
+.notes-label{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.fi-textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:inherit;font-size:13px;padding:10px 12px;outline:none;transition:border-color .2s;resize:vertical;min-height:70px}
+.fi-textarea:focus{border-color:var(--blue)}
+
+.overall-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}
+.oc-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+
+.sum-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.sum-item{background:var(--bg3);border-radius:var(--r-sm);padding:10px;text-align:center;border:1px solid var(--border)}
+.sum-val{font-size:20px;font-weight:800;font-family:'JetBrains Mono',monospace}
+.sum-lbl{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+
+.score-card{background:linear-gradient(135deg,var(--blue-deeper),var(--blue-dark));border-radius:var(--r);padding:18px;margin-bottom:10px;color:#fff;text-align:center}
+.score-card-lbl{font-size:11px;color:var(--blue-mid);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.score-card-val{font-size:42px;font-weight:800;font-family:'JetBrains Mono',monospace;line-height:1}
+.score-card-pct{font-size:14px;color:var(--blue-mid);margin-top:6px}
+.score-bar{height:8px;background:rgba(255,255,255,.15);border-radius:4px;margin-top:14px;overflow:hidden}
+.score-fill{height:100%;background:linear-gradient(90deg,var(--cyan),#fff);border-radius:4px;transition:width .6s}
+
+.rating-wrap{margin-bottom:12px}
+.rating-label{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.rating-opts{display:flex;gap:6px}
+.ropt{flex:1;padding:10px 4px;border-radius:var(--r-sm);border:1.5px solid var(--border);cursor:pointer;text-align:center;font-size:13px;font-weight:700;background:var(--bg2);transition:all .15s;font-family:inherit}
+.ropt.on-1,.ropt.on-2{border-color:var(--green);background:var(--green-bg);color:var(--green-dark)}
+.ropt.on-3{border-color:var(--amber);background:var(--amber-bg);color:var(--amber-dark)}
+.ropt.on-4,.ropt.on-5{border-color:var(--red);background:var(--red-bg);color:var(--red-dark)}
+
+.signature-area{background:var(--bg);border:2px dashed var(--border2);border-radius:var(--r-sm);height:140px;position:relative;cursor:crosshair;overflow:hidden}
+.signature-area.signed{border-style:solid;border-color:var(--green);background:var(--bg2)}
+.signature-canvas{width:100%;height:100%;display:block}
+.sig-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:13px;pointer-events:none}
+.sig-placeholder.hide{display:none}
+.sig-actions{display:flex;gap:8px;margin-top:8px}
+.sig-clear{flex:1;padding:8px;border-radius:var(--r-sm);background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
+.sig-name{flex:2;padding:9px 11px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);font-family:inherit;font-size:13px;outline:none}
+
+.submit-area{padding:14px 16px;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);box-shadow:0 -4px 20px rgba(12,35,64,.1);z-index:100}
+.bottom-bar{display:flex;gap:8px}
+.submit-btn{flex:1;background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;border:none;border-radius:var(--r-sm);padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 16px rgba(20,119,198,.4)}
+.submit-btn:hover{transform:translateY(-1px)}
+.submit-btn:disabled{opacity:.5;cursor:not-allowed}
+.draft-btn{padding:14px 16px;background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:var(--r-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+
+.ai-tagging{font-size:10px;color:var(--cyan);font-weight:600;display:none;align-items:center;gap:4px;margin-bottom:6px}
+.ai-tagging.show{display:flex}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.ai-dot{width:4px;height:4px;border-radius:50%;background:var(--cyan);animation:pulse 1.2s infinite}
+.ai-dot:nth-child(2){animation-delay:.2s}
+.ai-dot:nth-child(3){animation-delay:.4s}
+
+.success-screen{display:none;position:fixed;inset:0;background:var(--bg2);z-index:500;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:32px}
+.success-screen.show{display:flex}
+.success-icon{width:80px;height:80px;border-radius:50%;background:var(--green-bg);display:flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:20px;border:3px solid var(--green)}
+.success-title{font-size:22px;font-weight:800;color:var(--text);margin-bottom:8px}
+.success-sub{font-size:14px;color:var(--text2);line-height:1.6;max-width:300px;margin-bottom:24px}
+.success-ref{background:var(--blue-light);border:1px solid var(--blue-mid);border-radius:var(--r-sm);padding:12px 20px;margin-bottom:20px}
+.success-ref-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.success-ref-val{font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--blue)}
+.success-score{font-size:32px;font-weight:800;color:var(--blue);font-family:'JetBrains Mono',monospace;margin-bottom:8px}
+.back-btn{background:var(--blue);color:#fff;border:none;border-radius:var(--r-sm);padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+
+.toast{position:fixed;bottom:140px;left:50%;transform:translateX(-50%);background:var(--blue-deeper);color:#fff;padding:9px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 16px rgba(9,61,114,.3)}
+.toast.show{opacity:1}
+
+.annotate-modal{display:none;position:fixed;inset:0;background:rgba(9,61,114,.9);z-index:600;flex-direction:column;padding:16px}
+.annotate-modal.open{display:flex}
+.annotate-header{display:flex;align-items:center;justify-content:space-between;color:#fff;margin-bottom:12px}
+.annotate-title{font-size:14px;font-weight:700}
+.annotate-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:16px}
+.annotate-canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;background:#000;border-radius:var(--r);overflow:hidden;margin-bottom:12px}
+.annotate-canvas{max-width:100%;max-height:100%;display:block;cursor:crosshair;touch-action:none}
+.annotate-tools{display:flex;gap:8px;justify-content:center;margin-bottom:12px}
+.atool{width:36px;height:36px;border-radius:50%;border:2px solid transparent;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.atool.on{border-color:#fff}
+.annotate-actions{display:flex;gap:8px}
+.aaction{flex:1;padding:11px;border-radius:var(--r-sm);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;border:none}
+.aaction-cancel{background:rgba(255,255,255,.15);color:#fff}
+.aaction-save{background:var(--cyan);color:#fff}
+
+input[type=file]{display:none}
+
+@media(min-width:600px){
+  .submit-area{max-width:600px;left:50%;transform:translateX(-50%)}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo">
+      <div class="logo-mark">JV</div>
+      <div>
+        <div class="logo-name">Jabiru Ventures</div>
+        <div class="logo-sub">Site Inspection</div>
+      </div>
+    </div>
+    <div class="score-pill">
+      <div class="dot" id="net-dot"></div>
+      <div>
+        <div class="score-val" id="live-score">100</div>
+        <div class="score-lbl">Score</div>
+      </div>
+    </div>
+  </div>
+  <div class="network-row" style="margin-bottom:8px">
+    <span id="net-text">Offline — saving locally</span>
+    <span style="margin-left:auto" id="progress-text">0% complete</span>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+</div>
+
+<div class="job-card">
+  <div class="job-card-top">
+    <div class="job-title" id="job-address">Loading job...</div>
+    <div class="job-inv" id="job-inv">—</div>
+  </div>
+  <div class="job-meta">
+    <div class="meta-item"><div class="meta-lbl">Client</div><div class="meta-val" id="job-client">—</div></div>
+    <div class="meta-item"><div class="meta-lbl">Property type</div><div class="meta-val" id="job-type">—</div></div>
+    <div class="meta-item"><div class="meta-lbl">Date</div><div class="meta-val" id="job-date">—</div></div>
+    <div class="meta-item"><div class="meta-lbl">Inspector</div><div class="meta-val">Jabiru Team</div></div>
+  </div>
+</div>
+
+<div class="section-nav" id="section-nav"></div>
+
+<div class="content" id="main-content"></div>
+
+<div class="submit-area">
+  <div class="bottom-bar">
+    <button class="submit-btn" id="submit-btn" onclick="submitChecklist()">
+      <span id="submit-text">Submit Inspection Report</span>
+    </button>
+    <button class="draft-btn" onclick="saveDraft()">💾</button>
+  </div>
+</div>
+
+<div class="success-screen" id="success-screen">
+  <div class="success-icon">✓</div>
+  <div class="success-title">Inspection submitted!</div>
+  <div class="success-score" id="success-score">100%</div>
+  <div class="success-sub">Your checklist has been saved. AI is drafting the full report.</div>
+  <div class="success-ref">
+    <div class="success-ref-lbl">Job reference</div>
+    <div class="success-ref-val" id="success-ref">JV-2025-0000</div>
+  </div>
+  <button class="back-btn" onclick="window.location.href='index.html'">← Back to CRM</button>
+</div>
+
+<div class="annotate-modal" id="annotate-modal">
+  <div class="annotate-header">
+    <div class="annotate-title">Mark the defect</div>
+    <button class="annotate-close" onclick="closeAnnotate()">✕</button>
+  </div>
+  <div class="annotate-canvas-wrap">
+    <canvas class="annotate-canvas" id="annotate-canvas"></canvas>
+  </div>
+  <div class="annotate-tools">
+    <button class="atool on" id="tool-red" style="background:#FF3B30" onclick="setColor('#FF3B30','tool-red')"></button>
+    <button class="atool" id="tool-yellow" style="background:#FFCC00" onclick="setColor('#FFCC00','tool-yellow')"></button>
+    <button class="atool" id="tool-white" style="background:#fff" onclick="setColor('#FFFFFF','tool-white')"></button>
+  </div>
+  <div class="annotate-actions">
+    <button class="aaction aaction-cancel" onclick="closeAnnotate()">Cancel</button>
+    <button class="aaction aaction-save" onclick="saveAnnotation()">Save annotation</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="photo-input" accept="image/*" capture="environment">
+
+<script>
+const SUPABASE_URL      = 'https://siglqixiefvrxfvpxttj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_3LA7_L8nCwysXKAI7-0Faw_v6m7iTL_';
+const CLAUDE_API_KEY    = 'YOUR_CLAUDE_API_KEY';
+
+const SECTIONS = [
+  { id:'exterior', label:'Exterior', icon:'🏠', areas:[
+    { id:'facade',   name:'Building Facade',    icon:'🧱' },
+    { id:'roof',     name:'Roof & Gutters',     icon:'🔺' },
+    { id:'compound', name:'Compound & Fencing', icon:'🌿' },
+    { id:'carpark',  name:'Car Park / Porch',   icon:'🚗' },
+  ]},
+  { id:'living', label:'Living', icon:'🛋️', areas:[
+    { id:'living_room', name:'Living Room',    icon:'🛋️' },
+    { id:'dining_room', name:'Dining Room',    icon:'🍽️' },
+    { id:'hallway',     name:'Hallway / Foyer', icon:'🚪' },
+  ]},
+  { id:'bedrooms', label:'Bedrooms', icon:'🛏️', areas:[
+    { id:'master_bed', name:'Master Bedroom', icon:'🛏️' },
+    { id:'bedroom2',   name:'Bedroom 2',      icon:'🛏️' },
+    { id:'bedroom3',   name:'Bedroom 3',      icon:'🛏️' },
+    { id:'bedroom4',   name:'Bedroom 4',      icon:'🛏️' },
+  ]},
+  { id:'bathrooms', label:'Bathrooms', icon:'🚿', areas:[
+    { id:'master_bath', name:'Master Bathroom', icon:'🚿' },
+    { id:'common_bath', name:'Common Bathroom', icon:'🚿' },
+    { id:'toilet',      name:'Guest Toilet',    icon:'🚽' },
+  ]},
+  { id:'kitchen', label:'Kitchen', icon:'🍳', areas:[
+    { id:'kitchen_main', name:'Kitchen (Dry)',  icon:'🍳' },
+    { id:'kitchen_wet',  name:'Kitchen (Wet)',  icon:'💧' },
+    { id:'yard',         name:'Yard / Utility', icon:'🧺' },
+  ]},
+  { id:'mep', label:'M&E', icon:'⚡', areas:[
+    { id:'electrical', name:'Electrical DB & Wiring', icon:'⚡' },
+    { id:'plumbing',   name:'Plumbing & Pipes',       icon:'🔧' },
+    { id:'aircon',     name:'Air-Conditioning',       icon:'❄️' },
+    { id:'fire',       name:'Fire Protection',        icon:'🔥' },
+  ]},
+  { id:'overall', label:'Overall', icon:'📋', areas:[] }
+];
+
+let state = {
+  jobId: null, jobData: null, sections: {},
+  currentSection: 'exterior', overallRating: null,
+  overallRemarks: '', recommendations: '',
+  signatureData: null, signedBy: '',
+  completedSections: new Set()
+};
+
+let selectedSeverity = {};
+let currentPhotoTarget = null;
+let annotateCtx = null;
+let annotateImg = null;
+let annotateColor = '#FF3B30';
+let isDrawing = false;
+let pendingPhotoCallback = null;
+
+window.addEventListener('load', () => {
+  checkNetwork();
+  setInterval(checkNetwork, 5000);
+  window.addEventListener('online', checkNetwork);
+  window.addEventListener('offline', checkNetwork);
+  loadJobFromURL();
+  initSections();
+  renderNav();
+  showSection('exterior');
+  loadDraft();
+});
+
+function checkNetwork() {
+  const dot = document.getElementById('net-dot');
+  const txt = document.getElementById('net-text');
+  if (navigator.onLine) {
+    dot.className = 'dot online';
+    txt.textContent = 'Online — auto-syncing';
+  } else {
+    dot.className = 'dot';
+    txt.textContent = 'Offline — saving locally';
+  }
+}
+
+function loadJobFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const jobId = params.get('job');
+  if (jobId) {
+    state.jobId = jobId;
+    fetchJobData(jobId);
+  } else {
+    state.jobData = {
+      invoice_no: 'JV-2025-0004', client: 'Mohd Faizal',
+      address: 'No 12, Jalan Seksyen 7, Shah Alam',
+      property_type: 'Landed', inspection_date: '2025-04-05'
+    };
+    updateJobCard();
+  }
+}
+
+async function fetchJobData(jobId) {
+  if (SUPABASE_URL === 'YOUR_SUPABASE_URL') { updateJobCard(); return; }
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/jobs?id=eq.${jobId}&select=*,customers(*),properties(*)`, {
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+    });
+    const data = await r.json();
+    if (data[0]) {
+      const job = data[0];
+      state.jobData = {
+        invoice_no: job.invoice_no,
+        client: job.customers?.full_name || '—',
+        address: job.properties?.address || '—',
+        property_type: job.properties?.property_type || '—',
+        inspection_date: job.inspection_date
+      };
+      updateJobCard();
+    }
+  } catch(e) { updateJobCard(); }
+}
+
+function updateJobCard() {
+  const d = state.jobData;
+  if (!d) return;
+  document.getElementById('job-address').textContent = d.address || 'No address';
+  document.getElementById('job-inv').textContent     = d.invoice_no || '—';
+  document.getElementById('job-client').textContent  = d.client || '—';
+  document.getElementById('job-type').textContent    = d.property_type || '—';
+  document.getElementById('job-date').textContent    = d.inspection_date ? new Date(d.inspection_date).toLocaleDateString('en-MY') : '—';
+  document.getElementById('success-ref').textContent = d.invoice_no || '—';
+}
+
+function initSections() {
+  SECTIONS.forEach(sec => {
+    state.sections[sec.id] = {};
+    sec.areas.forEach(area => {
+      state.sections[sec.id][area.id] = { condition:null, defects:[], notes:'' };
+    });
+  });
+}
+
+function renderNav() {
+  const nav = document.getElementById('section-nav');
+  nav.innerHTML = SECTIONS.map(sec => {
+    const defectCount = countSectionDefects(sec.id);
+    const isDone = state.completedSections.has(sec.id);
+    return `<button class="snav-btn${isDone?' done':''}" id="snav-${sec.id}" onclick="showSection('${sec.id}')">${sec.icon} ${sec.label}${defectCount > 0 ? `<span class="snav-count">${defectCount}</span>` : ''}</button>`;
+  }).join('');
+  updateProgress();
+  updateLiveScore();
+}
+
+function countSectionDefects(secId) {
+  if (secId === 'overall') return 0;
+  const sec = state.sections[secId];
+  if (!sec) return 0;
+  return Object.values(sec).reduce((t, a) => t + (a.defects?.length || 0), 0);
+}
+
+function updateProgress() {
+  const total = SECTIONS.length;
+  const done  = state.completedSections.size;
+  const pct   = Math.round((done / total) * 100);
+  document.getElementById('progress-text').textContent = pct + '% complete';
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+function updateLiveScore() {
+  const score = calculateScore();
+  document.getElementById('live-score').textContent = score;
+}
+
+function calculateScore() {
+  let totalAreas = 0, totalPenalty = 0;
+  SECTIONS.filter(s=>s.id!=='overall').forEach(sec => {
+    Object.values(state.sections[sec.id]||{}).forEach(area => {
+      totalAreas++;
+      area.defects.forEach(d => {
+        if (d.severity === 'Critical') totalPenalty += 10;
+        else if (d.severity === 'Major') totalPenalty += 5;
+        else if (d.severity === 'Minor') totalPenalty += 2;
+      });
+    });
+  });
+  if (totalAreas === 0) return 100;
+  return Math.max(0, Math.min(100, 100 - totalPenalty));
+}
+
+function showSection(secId) {
+  state.currentSection = secId;
+  document.querySelectorAll('.snav-btn').forEach(b => b.classList.remove('on'));
+  const btn = document.getElementById('snav-' + secId);
+  if (btn) { btn.classList.add('on'); btn.scrollIntoView({inline:'center',behavior:'smooth'}); }
+  const sec = SECTIONS.find(s => s.id === secId);
+  renderSection(sec);
+}
+
+function renderSection(sec) {
+  const content = document.getElementById('main-content');
+  if (sec.id === 'overall') { renderOverall(); return; }
+  const score = calculateScore();
+  content.innerHTML = `
+    <div class="section-header">
+      <div class="sh-left">
+        <div class="sh-title">${sec.icon} ${sec.label}</div>
+        <div class="sh-sub">Inspect each area and log all defects</div>
+      </div>
+      <div class="sh-score">${score}%</div>
+    </div>
+    ${sec.areas.map(area => renderAreaCard(sec.id, area)).join('')}
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button onclick="markSectionDone('${sec.id}')" style="flex:1;padding:11px;border-radius:var(--r-sm);background:var(--green-bg);color:var(--green-dark);border:1.5px solid var(--green);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">✓ Mark complete</button>
+      ${SECTIONS.findIndex(s=>s.id===sec.id) < SECTIONS.length-1 ? `<button onclick="nextSection('${sec.id}')" style="flex:1;padding:11px;border-radius:var(--r-sm);background:var(--blue);color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Next →</button>` : ''}
+    </div>
+    <div style="height:20px"></div>
+  `;
+}
+
+function renderAreaCard(secId, area) {
+  const areaData    = state.sections[secId]?.[area.id] || { condition:null, defects:[], notes:'' };
+  const defCount    = areaData.defects.length;
+  const hasCritical = areaData.defects.some(d => d.severity === 'Critical');
+  const hasDefects  = defCount > 0;
+  const statusColor = hasCritical ? 'critical' : hasDefects ? 'issues' : areaData.condition === 'Good' ? 'ok' : '';
+  const cardClass   = hasCritical ? 'has-critical' : hasDefects ? 'has-defects' : '';
+  return `<div class="area-card ${cardClass}" id="acard-${secId}-${area.id}">
+    <div class="area-head" onclick="toggleArea('${secId}','${area.id}')">
+      <div class="area-left">
+        <div class="area-icon">${area.icon}</div>
+        <div class="area-info">
+          <div class="area-name">${area.name}</div>
+          <div class="area-count">${defCount > 0 ? `${defCount} defect${defCount>1?'s':''} logged` : 'Tap to inspect'}</div>
+        </div>
+      </div>
+      <div class="area-right">
+        <div class="area-status ${statusColor}"></div>
+        <div class="area-toggle" id="atog-${secId}-${area.id}">▼</div>
+      </div>
+    </div>
+    <div class="area-body" id="abody-${secId}-${area.id}">
+      ${renderAreaBody(secId, area, areaData)}
+    </div>
+  </div>`;
+}
+
+function renderAreaBody(secId, area, areaData) {
+  return `
+    <div class="condition-wrap">
+      <div class="condition-label">Overall condition</div>
+      <div class="condition-opts">
+        ${['Good','Minor','Major','Critical'].map(c => `
+          <div class="copt${areaData.condition===c?' selected-'+c.toLowerCase():''}" onclick="setCondition('${secId}','${area.id}','${c}')">
+            <div class="copt-icon">${c==='Good'?'✅':c==='Minor'?'⚠️':c==='Major'?'🔶':'🔴'}</div>
+            <div class="copt-label">${c}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+    ${areaData.defects.length > 0 ? `<div class="defects-list">${areaData.defects.map((d,i) => renderDefectItem(secId, area.id, d, i)).join('')}</div>` : ''}
+    <div class="add-defect-form">
+      <div class="add-defect-title">+ Log defect</div>
+      <div class="sev-select">
+        ${['Minor','Major','Critical'].map(s => `<button class="sev-opt" id="sev-${secId}-${area.id}-${s}" onclick="selectSev('${secId}','${area.id}','${s}')">${s}</button>`).join('')}
+      </div>
+      <textarea class="fi" id="desc-${secId}-${area.id}" placeholder="Describe the defect..." rows="2"></textarea>
+      <div class="photo-row">
+        <button class="photo-btn" onclick="triggerPhoto('${secId}','${area.id}')">📷 Add photo</button>
+        <div class="photo-preview-wrap" id="prevwrap-${secId}-${area.id}">
+          <img class="photo-preview" id="prev-${secId}-${area.id}">
+          <button class="annotate-btn" onclick="openAnnotate('${secId}','${area.id}')">✏️</button>
+        </div>
+      </div>
+      <div class="ai-tagging" id="aitag-${secId}-${area.id}">
+        <div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div>
+        <span>AI analyzing photo...</span>
+      </div>
+      <button class="add-defect-btn" onclick="addDefect('${secId}','${area.id}')">Add defect</button>
+    </div>
+    <div class="notes-wrap">
+      <div class="notes-label">Inspector notes</div>
+      <textarea class="fi-textarea" id="notes-${secId}-${area.id}" placeholder="Additional notes for this area..." onchange="saveNotes('${secId}','${area.id}',this.value)">${areaData.notes}</textarea>
+    </div>`;
+}
+
+function renderDefectItem(secId, areaId, d, i) {
+  return `<div class="defect-item">
+    <div class="defect-top">
+      <span class="defect-sev sev-${d.severity.toLowerCase()}">${d.severity}</span>
+      <span class="defect-desc">${d.description}</span>
+      <button class="defect-del" onclick="deleteDefect('${secId}','${areaId}',${i})">✕</button>
+    </div>
+    ${d.photoUrl ? `<img class="defect-photo" src="${d.photoUrl}">` : ''}
+    ${d.aiTag ? `<div class="defect-tag">🤖 ${d.aiTag}</div>` : ''}
+  </div>`;
+}
+
+function toggleArea(secId, areaId) {
+  const body = document.getElementById(`abody-${secId}-${areaId}`);
+  const tog  = document.getElementById(`atog-${secId}-${areaId}`);
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  tog.classList.toggle('open', !isOpen);
+}
+
+function setCondition(secId, areaId, c) {
+  state.sections[secId][areaId].condition = c;
+  refreshAreaCard(secId, areaId);
+  autoSaveDraft();
+}
+
+function selectSev(secId, areaId, sev) {
+  const key = `${secId}-${areaId}`;
+  selectedSeverity[key] = sev;
+  ['Minor','Major','Critical'].forEach(s => {
+    const btn = document.getElementById(`sev-${secId}-${areaId}-${s}`);
+    if (btn) btn.className = 'sev-opt' + (s===sev ? ` on-${s.toLowerCase()}` : '');
+  });
+}
+
+function addDefect(secId, areaId) {
+  const key  = `${secId}-${areaId}`;
+  const sev  = selectedSeverity[key];
+  const desc = document.getElementById(`desc-${secId}-${areaId}`)?.value.trim();
+  const prev = document.getElementById(`prev-${secId}-${areaId}`);
+  if (!sev)  { showToast('Select severity first'); return; }
+  if (!desc) { showToast('Describe the defect'); return; }
+  const defect = {
+    severity: sev, description: desc,
+    photoUrl: prev?.src && prev.src.startsWith('data:') ? prev.src : null,
+    aiTag: prev?.dataset.tag || null,
+    timestamp: new Date().toISOString()
+  };
+  state.sections[secId][areaId].defects.push(defect);
+  selectedSeverity[key] = null;
+  autoSaveDraft();
+  refreshAreaCard(secId, areaId);
+  showToast('Defect logged ✓');
+}
+
+function deleteDefect(secId, areaId, i) {
+  state.sections[secId][areaId].defects.splice(i, 1);
+  refreshAreaCard(secId, areaId);
+  autoSaveDraft();
+}
+
+function saveNotes(secId, areaId, val) {
+  state.sections[secId][areaId].notes = val;
+  autoSaveDraft();
+}
+
+function refreshAreaCard(secId, areaId) {
+  const area     = SECTIONS.find(s=>s.id===secId)?.areas.find(a=>a.id===areaId);
+  const areaData = state.sections[secId]?.[areaId];
+  if (!area || !areaData) return;
+  const card = document.getElementById(`acard-${secId}-${areaId}`);
+  if (!card) return;
+  const wasOpen = document.getElementById(`abody-${secId}-${areaId}`)?.classList.contains('open');
+  const defCount = areaData.defects.length;
+  const hasCritical = areaData.defects.some(d => d.severity === 'Critical');
+  const hasDefects  = defCount > 0;
+  const statusColor = hasCritical ? 'critical' : hasDefects ? 'issues' : areaData.condition === 'Good' ? 'ok' : '';
+  const cardClass = hasCritical ? 'has-critical' : hasDefects ? 'has-defects' : '';
+  card.className = `area-card ${cardClass}`;
+  card.innerHTML = `
+    <div class="area-head" onclick="toggleArea('${secId}','${areaId}')">
+      <div class="area-left">
+        <div class="area-icon">${area.icon}</div>
+        <div class="area-info">
+          <div class="area-name">${area.name}</div>
+          <div class="area-count">${defCount > 0 ? `${defCount} defect${defCount>1?'s':''} logged` : 'Tap to inspect'}</div>
+        </div>
+      </div>
+      <div class="area-right">
+        <div class="area-status ${statusColor}"></div>
+        <div class="area-toggle ${wasOpen?'open':''}" id="atog-${secId}-${areaId}">▼</div>
+      </div>
+    </div>
+    <div class="area-body ${wasOpen?'open':''}" id="abody-${secId}-${areaId}">
+      ${renderAreaBody(secId, area, areaData)}
+    </div>`;
+  renderNav();
+}
+
+function triggerPhoto(secId, areaId) {
+  currentPhotoTarget = { secId, areaId };
+  document.getElementById('photo-input').click();
+}
+
+document.getElementById('photo-input').addEventListener('change', async function(e) {
+  const file = e.target.files[0];
+  if (!file || !currentPhotoTarget) return;
+  const { secId, areaId } = currentPhotoTarget;
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    const dataUrl = ev.target.result;
+    const prev = document.getElementById(`prev-${secId}-${areaId}`);
+    const prevWrap = document.getElementById(`prevwrap-${secId}-${areaId}`);
+    if (prev) {
+      prev.src = dataUrl;
+      prev.dataset.original = dataUrl;
+      prev.dataset.tag = '';
+      prevWrap.classList.add('show');
+    }
+    if (CLAUDE_API_KEY !== 'YOUR_CLAUDE_API_KEY') {
+      const tagEl = document.getElementById(`aitag-${secId}-${areaId}`);
+      if (tagEl) tagEl.classList.add('show');
+      const tag = await aiTagPhoto(dataUrl);
+      if (tagEl) tagEl.classList.remove('show');
+      if (prev) prev.dataset.tag = tag;
+      showToast(`AI: ${tag}`);
+    }
+  };
+  reader.readAsDataURL(file);
+  this.value = '';
+});
+
+async function aiTagPhoto(dataUrl) {
+  try {
+    const base64 = dataUrl.split(',')[1];
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':CLAUDE_API_KEY,'anthropic-version':'2023-06-01'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514', max_tokens: 80,
+        messages: [{ role:'user', content:[
+          { type:'image', source:{type:'base64',media_type:'image/jpeg',data:base64} },
+          { type:'text', text:'You are an inspection assistant. In 8 words or less, describe what defect or element is shown. Be specific. Example: "hairline crack, bathroom ceiling near window". No preamble.' }
+        ]}]
+      })
+    });
+    const data = await res.json();
+    return data.content?.[0]?.text?.trim() || 'Photo captured';
+  } catch(e) { return 'Photo captured'; }
+}
+
+// ── PHOTO ANNOTATION ─────────────────────
+function openAnnotate(secId, areaId) {
+  const prev = document.getElementById(`prev-${secId}-${areaId}`);
+  if (!prev?.src) return;
+  pendingPhotoCallback = { secId, areaId, target: prev };
+  const modal = document.getElementById('annotate-modal');
+  const canvas = document.getElementById('annotate-canvas');
+  annotateCtx = canvas.getContext('2d');
+  annotateImg = new Image();
+  annotateImg.onload = () => {
+    const maxW = window.innerWidth - 32;
+    const maxH = window.innerHeight - 220;
+    let w = annotateImg.width, h = annotateImg.height;
+    const ratio = Math.min(maxW/w, maxH/h, 1);
+    w *= ratio; h *= ratio;
+    canvas.width = w; canvas.height = h;
+    annotateCtx.drawImage(annotateImg, 0, 0, w, h);
+  };
+  annotateImg.src = prev.dataset.original || prev.src;
+  modal.classList.add('open');
+
+  // Touch/mouse drawing
+  const startDraw = (e) => {
+    isDrawing = true;
+    const pt = getPoint(e, canvas);
+    annotateCtx.beginPath();
+    annotateCtx.strokeStyle = annotateColor;
+    annotateCtx.lineWidth = 4;
+    annotateCtx.lineCap = 'round';
+    annotateCtx.lineJoin = 'round';
+    annotateCtx.moveTo(pt.x, pt.y);
+  };
+  const draw = (e) => {
+    if (!isDrawing) return;
+    e.preventDefault();
+    const pt = getPoint(e, canvas);
+    annotateCtx.lineTo(pt.x, pt.y);
+    annotateCtx.stroke();
+  };
+  const endDraw = () => { isDrawing = false; };
+
+  canvas.onmousedown = startDraw;
+  canvas.onmousemove = draw;
+  canvas.onmouseup = endDraw;
+  canvas.onmouseleave = endDraw;
+  canvas.ontouchstart = startDraw;
+  canvas.ontouchmove = draw;
+  canvas.ontouchend = endDraw;
+}
+
+function getPoint(e, canvas) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+  return { x: x*scaleX, y: y*scaleY };
+}
+
+function setColor(color, btnId) {
+  annotateColor = color;
+  document.querySelectorAll('.atool').forEach(b => b.classList.remove('on'));
+  document.getElementById(btnId).classList.add('on');
+}
+
+function saveAnnotation() {
+  if (!pendingPhotoCallback || !annotateCtx) return;
+  const canvas = document.getElementById('annotate-canvas');
+  const annotatedUrl = canvas.toDataURL('image/jpeg', 0.85);
+  pendingPhotoCallback.target.src = annotatedUrl;
+  closeAnnotate();
+  showToast('Annotation saved ✓');
+}
+
+function closeAnnotate() {
+  document.getElementById('annotate-modal').classList.remove('open');
+  pendingPhotoCallback = null;
+}
+
+// ── OVERALL ──────────────────────────────
+function renderOverall() {
+  const content = document.getElementById('main-content');
+  const critical = countBySeverity('Critical');
+  const major    = countBySeverity('Major');
+  const minor    = countBySeverity('Minor');
+  const total    = critical + major + minor;
+  const score    = calculateScore();
+  const grade    = score >= 90 ? 'A' : score >= 75 ? 'B' : score >= 60 ? 'C' : score >= 45 ? 'D' : 'F';
+  const verdict  = score >= 90 ? 'Excellent' : score >= 75 ? 'Good' : score >= 60 ? 'Fair' : score >= 45 ? 'Poor' : 'Critical Issues';
+
+  content.innerHTML = `
+    <div class="section-header">
+      <div class="sh-left">
+        <div class="sh-title">📋 Overall Assessment</div>
+        <div class="sh-sub">Final summary and sign-off</div>
+      </div>
+    </div>
+
+    <div class="score-card">
+      <div class="score-card-lbl">Property Inspection Score</div>
+      <div class="score-card-val">${score}<span style="font-size:24px;color:var(--blue-mid)">/100</span></div>
+      <div class="score-card-pct">Grade ${grade} — ${verdict}</div>
+      <div class="score-bar"><div class="score-fill" style="width:${score}%"></div></div>
+    </div>
+
+    <div class="overall-card">
+      <div class="oc-title">📊 Defect summary</div>
+      <div class="sum-grid">
+        <div class="sum-item"><div class="sum-val" style="color:var(--red)">${critical}</div><div class="sum-lbl">Critical</div></div>
+        <div class="sum-item"><div class="sum-val" style="color:#E07008">${major}</div><div class="sum-lbl">Major</div></div>
+        <div class="sum-item"><div class="sum-val" style="color:var(--amber-dark)">${minor}</div><div class="sum-lbl">Minor</div></div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--text2);padding:8px;background:var(--bg3);border-radius:var(--r-sm)">${total} total defects across ${SECTIONS.length-1} sections</div>
+    </div>
+
+    <div class="overall-card">
+      <div class="oc-title">⭐ Property rating</div>
+      <div class="rating-wrap">
+        <div class="rating-label">1 = Excellent  ·  5 = Poor</div>
+        <div class="rating-opts">
+          ${[1,2,3,4,5].map(n => `<button class="ropt${state.overallRating===n?' on-'+n:''}" onclick="setRating(${n})">${n}</button>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="overall-card">
+      <div class="oc-title">📝 Inspector remarks</div>
+      <textarea class="fi-textarea" id="overall-remarks" placeholder="Overall condition summary..." onchange="state.overallRemarks=this.value;autoSaveDraft()">${state.overallRemarks}</textarea>
+    </div>
+
+    <div class="overall-card">
+      <div class="oc-title">💡 Recommendations</div>
+      <textarea class="fi-textarea" id="recommendations" placeholder="Recommended repairs and priorities..." rows="4" onchange="state.recommendations=this.value;autoSaveDraft()">${state.recommendations}</textarea>
+    </div>
+
+    <div class="overall-card">
+      <div class="oc-title">✍️ Sign off</div>
+      <div class="signature-area ${state.signatureData?'signed':''}" id="sig-area">
+        <canvas class="signature-canvas" id="sig-canvas"></canvas>
+        <div class="sig-placeholder ${state.signatureData?'hide':''}" id="sig-placeholder">Sign here</div>
+      </div>
+      <div class="sig-actions">
+        <button class="sig-clear" onclick="clearSignature()">Clear</button>
+        <input class="sig-name" id="signed-by" placeholder="Signed by (name)" value="${state.signedBy||''}" onchange="state.signedBy=this.value;autoSaveDraft()">
+      </div>
+    </div>
+
+    <div style="height:20px"></div>`;
+
+  setTimeout(initSignaturePad, 100);
+}
+
+function initSignaturePad() {
+  const canvas = document.getElementById('sig-canvas');
+  const area = document.getElementById('sig-area');
+  const placeholder = document.getElementById('sig-placeholder');
+  if (!canvas || !area) return;
+  const rect = area.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+  const ctx = canvas.getContext('2d');
+  ctx.strokeStyle = '#0C2340';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  if (state.signatureData) {
+    const img = new Image();
+    img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    img.src = state.signatureData;
+  }
+  let drawing = false;
+  const start = (e) => {
+    drawing = true;
+    placeholder.classList.add('hide');
+    const pt = getSigPoint(e, canvas);
+    ctx.beginPath();
+    ctx.moveTo(pt.x, pt.y);
+  };
+  const move = (e) => {
+    if (!drawing) return;
+    e.preventDefault();
+    const pt = getSigPoint(e, canvas);
+    ctx.lineTo(pt.x, pt.y);
+    ctx.stroke();
+  };
+  const end = () => {
+    if (drawing) {
+      drawing = false;
+      state.signatureData = canvas.toDataURL('image/png');
+      area.classList.add('signed');
+      autoSaveDraft();
+    }
+  };
+  canvas.onmousedown = start; canvas.onmousemove = move; canvas.onmouseup = end; canvas.onmouseleave = end;
+  canvas.ontouchstart = start; canvas.ontouchmove = move; canvas.ontouchend = end;
+}
+
+function getSigPoint(e, canvas) {
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.touches ? e.touches[0].clientX : e.clientX) - rect.left, y: (e.touches ? e.touches[0].clientY : e.clientY) - rect.top };
+}
+
+function clearSignature() {
+  const canvas = document.getElementById('sig-canvas');
+  const placeholder = document.getElementById('sig-placeholder');
+  const area = document.getElementById('sig-area');
+  if (canvas) { const ctx = canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height); }
+  state.signatureData = null;
+  if (placeholder) placeholder.classList.remove('hide');
+  if (area) area.classList.remove('signed');
+  autoSaveDraft();
+}
+
+function setRating(n) { state.overallRating = n; renderOverall(); autoSaveDraft(); }
+
+function countBySeverity(sev) {
+  let count = 0;
+  SECTIONS.filter(s=>s.id!=='overall').forEach(sec => {
+    Object.values(state.sections[sec.id]||{}).forEach(area => {
+      count += (area.defects||[]).filter(d=>d.severity===sev).length;
+    });
+  });
+  return count;
+}
+
+function markSectionDone(secId) {
+  state.completedSections.add(secId);
+  renderNav();
+  nextSection(secId);
+  showToast('Section complete ✓');
+  autoSaveDraft();
+}
+
+function nextSection(secId) {
+  const idx = SECTIONS.findIndex(s => s.id === secId);
+  const next = SECTIONS[idx + 1];
+  if (next) showSection(next.id);
+}
+
+function autoSaveDraft() {
+  try {
+    const draft = { state: { ...state, completedSections: [...state.completedSections] }, savedAt: new Date().toISOString() };
+    localStorage.setItem('jabiru_inspection_draft', JSON.stringify(draft));
+  } catch(e) {}
+}
+
+function loadDraft() {
+  try {
+    const saved = localStorage.getItem('jabiru_inspection_draft');
+    if (!saved) return;
+    const draft = JSON.parse(saved);
+    if (draft.state) {
+      draft.state.completedSections = new Set(draft.state.completedSections || []);
+      Object.assign(state, draft.state);
+      renderNav();
+      showToast('Draft restored');
+    }
+  } catch(e) {}
+}
+
+function saveDraft() { autoSaveDraft(); showToast('Draft saved ✓'); }
+
+async function submitChecklist() {
+  const btn = document.getElementById('submit-btn');
+  const txt = document.getElementById('submit-text');
+  btn.disabled = true;
+  txt.textContent = 'Submitting...';
+
+  const orEl = document.getElementById('overall-remarks');
+  const recEl = document.getElementById('recommendations');
+  if (orEl) state.overallRemarks = orEl.value;
+  if (recEl) state.recommendations = recEl.value;
+
+  const payload = buildPayload();
+  if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+    try { await saveToSupabase(payload); } catch(e) {}
+  }
+  try { localStorage.removeItem('jabiru_inspection_draft'); } catch(e) {}
+  document.getElementById('success-score').textContent = calculateScore() + '%';
+  document.getElementById('success-screen').classList.add('show');
+}
+
+function buildPayload() {
+  const sections = [];
+  SECTIONS.filter(s => s.id !== 'overall').forEach(sec => {
+    sec.areas.forEach(area => {
+      const areaData = state.sections[sec.id]?.[area.id];
+      if (!areaData) return;
+      sections.push({
+        section: sec.label, area: area.name,
+        condition: areaData.condition, defects: areaData.defects,
+        notes: areaData.notes
+      });
+    });
+  });
+  return {
+    job_id: state.jobId, inspector: 'Jabiru Team',
+    inspected_at: new Date().toISOString(),
+    inspection_score: calculateScore(),
+    overall_rating: state.overallRating,
+    overall_remarks: state.overallRemarks,
+    recommendations: state.recommendations,
+    total_defects: countBySeverity('Critical') + countBySeverity('Major') + countBySeverity('Minor'),
+    critical_count: countBySeverity('Critical'),
+    major_count: countBySeverity('Major'),
+    minor_count: countBySeverity('Minor'),
+    signature: state.signatureData,
+    signed_by: state.signedBy,
+    sections
+  };
+}
+
+async function saveToSupabase(payload) {
+  await fetch(`${SUPABASE_URL}/rest/v1/inspections`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+    body: JSON.stringify(payload)
+  });
+  if (state.jobId) {
+    await fetch(`${SUPABASE_URL}/rest/v1/jobs?id=eq.${state.jobId}`, {
+      method: 'PATCH',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'Inspected' })
+    });
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

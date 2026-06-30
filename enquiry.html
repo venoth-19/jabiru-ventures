@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Book an Inspection — Jabiru Ventures</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --navy:#0d1a2e;
+  --navy2:#112030;
+  --navy3:#1a2f4a;
+  --cyan:#1AB5D4;
+  --cyan-dark:#1299b4;
+  --blue:#1477C6;
+  --blue-deep:#093D72;
+  --white:#ffffff;
+  --muted:rgba(255,255,255,0.6);
+  --border:rgba(255,255,255,0.1);
+  --r:10px;
+  --r-sm:6px;
+}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--navy);color:var(--white);min-height:100vh;font-size:15px;line-height:1.6;}
+
+/* TOPBAR */
+.topbar{background:#090f1c;border-bottom:1px solid var(--border);padding:9px 48px;display:flex;justify-content:flex-end;}
+.topbar a{color:var(--cyan);font-size:13px;font-weight:500;text-decoration:none;display:flex;align-items:center;gap:7px;}
+.topbar a:hover{text-decoration:underline;}
+
+/* NAV */
+nav{background:rgba(13,26,46,0.97);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:0 48px;display:flex;align-items:center;justify-content:space-between;height:66px;position:sticky;top:0;z-index:200;box-shadow:0 2px 20px rgba(0,0,0,0.4);}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.nav-logo-mark{width:38px;height:38px;border-radius:8px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:19px;color:#fff;box-shadow:0 2px 10px rgba(26,181,212,0.4);}
+.nav-logo-text{font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:1.5px;color:#fff;}
+.nav-logo-text span{color:var(--cyan);}
+.nav-links{display:flex;gap:28px;}
+.nav-links a{color:var(--muted);font-size:13px;font-weight:500;text-decoration:none;transition:color .15s;}
+.nav-links a:hover{color:#fff;}
+.nav-cta{background:var(--cyan);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;padding:10px 22px;border:none;border-radius:4px;cursor:pointer;letter-spacing:.7px;text-transform:uppercase;transition:all .15s;box-shadow:0 2px 10px rgba(26,181,212,0.35);}
+.nav-cta:hover{background:var(--cyan-dark);transform:translateY(-1px);}
+
+/* HERO */
+.hero{background:linear-gradient(135deg, #0a1422 0%, #0d1f3c 45%, #0c2d60 100%);display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;padding:80px 80px;position:relative;overflow:hidden;min-height:calc(100vh - 96px);}
+.hero::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 20% 80%, rgba(26,181,212,0.08) 0%, transparent 50%),radial-gradient(circle at 80% 20%, rgba(20,119,198,0.08) 0%, transparent 50%);pointer-events:none;}
+.hero::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(26,181,212,0.3),transparent);}
+
+.hero-left{position:relative;z-index:1;}
+.hero-tag{display:inline-flex;align-items:center;gap:8px;background:rgba(26,181,212,0.1);border:1px solid rgba(26,181,212,0.3);border-radius:20px;padding:6px 16px;font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:1px;text-transform:uppercase;margin-bottom:28px;}
+.hero-sub{font-size:17px;color:var(--cyan);font-style:italic;font-weight:600;margin-bottom:6px;}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:80px;line-height:.95;letter-spacing:3px;color:#fff;margin-bottom:24px;}
+.hero-title span{color:var(--cyan);}
+.hero-desc{font-size:15px;color:var(--muted);line-height:1.85;margin-bottom:36px;max-width:430px;}
+
+.trust-row{display:flex;flex-direction:column;gap:12px;}
+.trust-item{display:flex;align-items:center;gap:12px;font-size:13px;color:rgba(255,255,255,0.75);font-weight:500;}
+.trust-dot{width:32px;height:32px;border-radius:50%;background:rgba(26,181,212,0.12);border:1px solid rgba(26,181,212,0.3);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+
+/* FORM CARD */
+.form-wrap{position:relative;z-index:1;}
+.form-card{background:rgba(17,32,48,0.92);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:38px;backdrop-filter:blur(16px);box-shadow:0 32px 80px rgba(0,0,0,0.5),0 0 0 1px rgba(26,181,212,0.06);}
+.form-title{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:1px;color:#fff;margin-bottom:4px;}
+.form-sub{font-size:13px;color:var(--muted);margin-bottom:26px;line-height:1.6;}
+
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.form-row.full{grid-template-columns:1fr;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+label{font-size:10px;font-weight:700;color:rgba(255,255,255,0.45);text-transform:uppercase;letter-spacing:.7px;}
+input,select,textarea{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:var(--r-sm);padding:10px 12px;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;outline:none;transition:border-color .15s,background .15s;width:100%;}
+input:focus,select:focus,textarea:focus{border-color:var(--cyan);background:rgba(26,181,212,0.05);}
+input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.25);}
+select option{background:#112030;color:#fff;}
+textarea{resize:vertical;min-height:78px;line-height:1.6;}
+
+.submit-btn{width:100%;background:var(--cyan);color:#fff;border:none;border-radius:var(--r-sm);padding:14px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;cursor:pointer;margin-top:16px;transition:all .15s;box-shadow:0 4px 16px rgba(26,181,212,0.3);}
+.submit-btn:hover:not(:disabled){background:var(--cyan-dark);transform:translateY(-1px);box-shadow:0 6px 20px rgba(26,181,212,0.4);}
+.submit-btn:disabled{opacity:.55;cursor:not-allowed;transform:none;}
+
+.form-note{font-size:11px;color:rgba(255,255,255,0.3);text-align:center;margin-top:10px;}
+.form-err{color:#ff7070;font-size:12px;text-align:center;margin-top:10px;display:none;padding:8px 12px;background:rgba(255,80,80,0.08);border-radius:var(--r-sm);border:1px solid rgba(255,80,80,0.2);}
+
+/* SUCCESS */
+.success-card{display:none;text-align:center;padding:24px 8px;}
+.success-icon{font-size:52px;margin-bottom:16px;}
+.success-title{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:1px;color:var(--cyan);margin-bottom:10px;}
+.success-text{font-size:14px;color:var(--muted);line-height:1.8;margin-bottom:28px;}
+.wa-btn{display:inline-flex;align-items:center;gap:9px;background:#25D366;color:#fff;border:none;border-radius:var(--r-sm);padding:13px 28px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;transition:background .15s;box-shadow:0 4px 14px rgba(37,211,102,0.3);}
+.wa-btn:hover{background:#1ebc5a;}
+
+/* STATS STRIP */
+.stats{background:var(--cyan);padding:44px 80px;display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
+.stat{text-align:center;}
+.stat-num{font-family:'Bebas Neue',sans-serif;font-size:52px;color:#fff;line-height:1;letter-spacing:1px;}
+.stat-label{font-size:11px;font-weight:700;color:rgba(255,255,255,0.75);text-transform:uppercase;letter-spacing:.8px;margin-top:4px;}
+
+/* WHY SECTION */
+.why{background:var(--navy2);padding:80px;}
+.section-eyebrow{font-size:11px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px;}
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:46px;letter-spacing:1px;color:#fff;margin-bottom:48px;line-height:1;}
+.why-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+.why-card{background:var(--navy3);border:1px solid var(--border);border-radius:var(--r);padding:30px;transition:border-color .2s,transform .2s;}
+.why-card:hover{border-color:rgba(26,181,212,0.35);transform:translateY(-2px);}
+.why-icon{width:48px;height:48px;border-radius:10px;background:rgba(26,181,212,0.1);border:1px solid rgba(26,181,212,0.2);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:18px;}
+.why-card-title{font-size:15px;font-weight:700;color:#fff;margin-bottom:10px;}
+.why-card-text{font-size:13px;color:var(--muted);line-height:1.75;}
+
+/* FOOTER */
+footer{background:#070d18;border-top:1px solid var(--border);padding:44px 80px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;}
+.footer-logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1.5px;color:#fff;}
+.footer-logo span{color:var(--cyan);}
+.footer-meta{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.footer-links{display:flex;gap:24px;}
+.footer-links a{color:var(--muted);font-size:12px;text-decoration:none;transition:color .15s;}
+.footer-links a:hover{color:#fff;}
+.footer-copy{font-size:11px;color:rgba(255,255,255,0.25);text-align:right;}
+
+/* RESPONSIVE */
+@media(max-width:960px){
+  .hero{grid-template-columns:1fr;padding:52px 24px;min-height:auto;gap:44px;}
+  .hero-title{font-size:60px;}
+  .hero-desc{max-width:100%;}
+  .stats{grid-template-columns:repeat(2,1fr);padding:40px 24px;gap:24px;}
+  .stat-num{font-size:42px;}
+  .why{padding:60px 24px;}
+  .why-grid{grid-template-columns:1fr;}
+  nav{padding:0 20px;}
+  .nav-links{display:none;}
+  .topbar{padding:9px 20px;}
+  footer{padding:36px 24px;flex-direction:column;text-align:center;}
+  .footer-links{justify-content:center;}
+  .footer-copy{text-align:center;}
+}
+@media(max-width:480px){
+  .hero-title{font-size:48px;}
+  .form-row{grid-template-columns:1fr;}
+  .form-card{padding:26px 20px;}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <a href="tel:+60149420756">📞 Make a call: +6014-942 0756</a>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">
+    <div class="nav-logo-mark">JV</div>
+    <div class="nav-logo-text">JABIRU <span>VENTURES</span></div>
+  </a>
+  <div class="nav-links">
+    <a href="#">Home</a>
+    <a href="#">About</a>
+    <a href="#">Services</a>
+    <a href="#">Projects</a>
+    <a href="#">Contact Us</a>
+  </div>
+  <button class="nav-cta" onclick="document.getElementById('formSection').scrollIntoView({behavior:'smooth',block:'center'})">Make an Appointment</button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-tag">✦ BEM-Certified Inspectors</div>
+    <div class="hero-sub">Build Your Dream With</div>
+    <h1 class="hero-title">JABIRU<br><span>VENTURES</span></h1>
+    <p class="hero-desc">Professional building inspection services across Penang and Malaysia. We ensure your property is safe, compliant, and structurally sound — before you sign anything.</p>
+    <div class="trust-row">
+      <div class="trust-item"><div class="trust-dot">🏛️</div> Registered with Board of Engineers Malaysia (BEM)</div>
+      <div class="trust-item"><div class="trust-dot">📋</div> Detailed reports delivered within 24 hours</div>
+      <div class="trust-item"><div class="trust-dot">🏠</div> Residential & commercial properties</div>
+      <div class="trust-item"><div class="trust-dot">✅</div> 500+ inspections completed across Malaysia</div>
+    </div>
+  </div>
+
+  <div class="form-wrap" id="formSection">
+    <div class="form-card">
+      <div id="formContent">
+        <div class="form-title">Book an Inspection</div>
+        <div class="form-sub">Fill in your details — we'll confirm within 24 hours.</div>
+
+        <form onsubmit="submitForm(event)">
+          <div class="form-row">
+            <div class="fg">
+              <label>Full Name *</label>
+              <input type="text" id="f_name" placeholder="Ahmad bin Ali" required/>
+            </div>
+            <div class="fg">
+              <label>WhatsApp Number *</label>
+              <input type="tel" id="f_phone" placeholder="0123456789" required/>
+            </div>
+          </div>
+          <div class="form-row full">
+            <div class="fg">
+              <label>Email Address</label>
+              <input type="email" id="f_email" placeholder="email@example.com"/>
+            </div>
+          </div>
+          <div class="form-row full">
+            <div class="fg">
+              <label>Property Address *</label>
+              <input type="text" id="f_address" placeholder="No. 12, Jalan Mawar, Taman..." required/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="fg">
+              <label>City *</label>
+              <input type="text" id="f_city" placeholder="Georgetown" required/>
+            </div>
+            <div class="fg">
+              <label>State *</label>
+              <select id="f_state" required>
+                <option value="">Select state</option>
+                <option>Penang</option>
+                <option>Kedah</option>
+                <option>Perlis</option>
+                <option>Perak</option>
+                <option>Selangor</option>
+                <option>Kuala Lumpur</option>
+                <option>Putrajaya</option>
+                <option>Negeri Sembilan</option>
+                <option>Melaka</option>
+                <option>Johor</option>
+                <option>Pahang</option>
+                <option>Terengganu</option>
+                <option>Kelantan</option>
+                <option>Sabah</option>
+                <option>Sarawak</option>
+                <option>Labuan</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="fg">
+              <label>Property Type</label>
+              <select id="f_proptype">
+                <option value="">Select type</option>
+                <option>Residential</option>
+                <option>Commercial</option>
+                <option>Industrial</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label>Inspection Type</label>
+              <select id="f_insptype">
+                <option value="">Select type</option>
+                <option>Pre-Purchase Inspection</option>
+                <option>Handover / Defect Inspection</option>
+                <option>Renovation Inspection</option>
+                <option>Full Building Inspection</option>
+                <option>Facility Management Check</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row full">
+            <div class="fg">
+              <label>Preferred Inspection Date</label>
+              <input type="date" id="f_date"/>
+            </div>
+          </div>
+          <div class="form-row full">
+            <div class="fg">
+              <label>Additional Notes</label>
+              <textarea id="f_notes" placeholder="Any specific concerns, access instructions, property age, etc."></textarea>
+            </div>
+          </div>
+
+          <button class="submit-btn" type="submit" id="submitBtn">Submit Enquiry →</button>
+          <div class="form-note">🔒 Your details are used only to process your enquiry.</div>
+          <div class="form-err" id="formErr"></div>
+        </form>
+      </div>
+
+      <!-- SUCCESS STATE -->
+      <div class="success-card" id="successCard">
+        <div class="success-icon">✅</div>
+        <div class="success-title">Enquiry Received!</div>
+        <p class="success-text">
+          Thank you, <strong id="successName" style="color:#fff;"></strong>!<br/>
+          We've received your inspection request and will confirm within 24 hours.<br/><br/>
+          For urgent matters, WhatsApp us directly:
+        </p>
+        <a class="wa-btn" href="https://wa.me/60149420756?text=Hi%2C%20I%20just%20submitted%20a%20building%20inspection%20enquiry%20on%20your%20website." target="_blank">
+          💬 WhatsApp Us Now
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS STRIP -->
+<div class="stats">
+  <div class="stat"><div class="stat-num">500+</div><div class="stat-label">Inspections Completed</div></div>
+  <div class="stat"><div class="stat-num">10+</div><div class="stat-label">Years Experience</div></div>
+  <div class="stat"><div class="stat-num">BEM</div><div class="stat-label">Certified Inspectors</div></div>
+  <div class="stat"><div class="stat-num">24hr</div><div class="stat-label">Report Turnaround</div></div>
+</div>
+
+<!-- WHY SECTION -->
+<section class="why">
+  <div class="section-eyebrow">Why Choose Us</div>
+  <div class="section-title">INSPECTION YOU CAN TRUST</div>
+  <div class="why-grid">
+    <div class="why-card">
+      <div class="why-icon">🏛️</div>
+      <div class="why-card-title">BEM-Certified Professionals</div>
+      <div class="why-card-text">Our inspectors are registered with the Board of Engineers Malaysia — your report carries the legal weight needed for disputes, negotiations, and bank valuations.</div>
+    </div>
+    <div class="why-card">
+      <div class="why-icon">📄</div>
+      <div class="why-card-title">Photo-Documented Reports</div>
+      <div class="why-card-text">Section-by-section digital reports with photos, delivered within 24 hours. Every defect rated by severity — Critical, Major, or Minor — with clear action items.</div>
+    </div>
+    <div class="why-card">
+      <div class="why-icon">🛡️</div>
+      <div class="why-card-title">Pre-Purchase Protection</div>
+      <div class="why-card-text">Know exactly what you're buying before you commit. Our pre-purchase inspections uncover hidden defects that save you from expensive surprises after handover.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">JABIRU <span>VENTURES</span></div>
+  <div class="footer-meta">
+    <div class="footer-links">
+      <a href="tel:+60149420756">+6014-942 0756</a>
+      <a href="#">Services</a>
+      <a href="#">About</a>
+      <a href="#">Contact</a>
+    </div>
+  </div>
+  <div class="footer-copy">© 2025 Jabiru Ventures Sdn. Bhd.<br/>All rights reserved.</div>
+</footer>
+
+<script>
+const SUPABASE_URL     = 'https://siglqixiefvrxfvpxttj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_3LA7_L8nCwysXKAI7-0Faw_v6m7iTL_';
+
+async function dbPost(table, payload){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    },
+    body: JSON.stringify(payload)
+  });
+  if(!res.ok){
+    const err = await res.json().catch(()=>({}));
+    throw new Error(err.message || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+async function submitForm(e){
+  e.preventDefault();
+  const btn  = document.getElementById('submitBtn');
+  const errEl = document.getElementById('formErr');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  const name     = document.getElementById('f_name').value.trim();
+  const phone    = document.getElementById('f_phone').value.trim();
+  const email    = document.getElementById('f_email').value.trim();
+  const address  = document.getElementById('f_address').value.trim();
+  const city     = document.getElementById('f_city').value.trim();
+  const state    = document.getElementById('f_state').value;
+  const proptype = document.getElementById('f_proptype').value;
+  const insptype = document.getElementById('f_insptype').value;
+  const date     = document.getElementById('f_date').value;
+  const notes    = document.getElementById('f_notes').value.trim();
+
+  try {
+    // Step 1 — create customer record
+    const [customer] = await dbPost('customers', {
+      full_name:   name,
+      phone:       phone,
+      email:       email || null,
+      lead_source: 'Website'
+    });
+
+    // Step 2 — create property record
+    const [property] = await dbPost('properties', {
+      customer_id:   customer.id,
+      address:       address,
+      city:          city,
+      state:         state,
+      property_type: proptype || null
+    });
+
+    // Step 3 — create job as Lead
+    const jobNotes = [insptype, notes].filter(Boolean).join(' — ') || null;
+    await dbPost('jobs', {
+      customer_id:     customer.id,
+      property_id:     property.id,
+      status:          'Lead',
+      inspection_date: date || null,
+      notes:           jobNotes
+    });
+
+    // Show success state
+    document.getElementById('successName').textContent = name.split(' ')[0];
+    document.getElementById('formContent').style.display = 'none';
+    document.getElementById('successCard').style.display  = 'block';
+
+  } catch(err){
+    errEl.textContent = 'Something went wrong. Please try again or WhatsApp us at +6014-942 0756.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Submit Enquiry →';
+    console.error('Submission error:', err);
+  }
+}
+</script>
+</body>
+</html>

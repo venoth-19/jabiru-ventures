@@ -293,9 +293,11 @@ let allData=[],filtered=[];
 async function loadData(){
   try{
     const [customers,properties,jobs]=await Promise.all([sb.q('customers',{select:'*',order:'created_at.desc'}),sb.q('properties',{select:'*'}),sb.q('jobs',{select:'*',order:'created_at.desc'})]);
+    document.title=`CRM DEBUG: ${Array.isArray(customers)?customers.length+' customers':'ERR:'+JSON.stringify(customers).slice(0,80)}`;
+    if(!Array.isArray(customers))throw new Error('customers not array: '+JSON.stringify(customers).slice(0,200));
     allData=customers.map(c=>({...c,properties:properties.filter(p=>p.customer_id===c.id),latestJob:jobs.filter(j=>j.customer_id===c.id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))[0]||null}));
     init();
-  }catch(e){demo();}
+  }catch(e){document.title='CRM ERR: '+e.message.slice(0,60);demo();}
 }
 
 function demo(){

@@ -267,17 +267,23 @@ const KANCOLS=[
 ];
 
 const sb={
+  async _tok(){
+    const {data:{session}}=await sbAuth.auth.getSession();
+    return session?.access_token||SUPABASE_ANON_KEY;
+  },
   async q(t,p={}){
+    const tok=await this._tok();
     let url=`${SUPABASE_URL}/rest/v1/${t}?`;
     const q=[];
     if(p.select)q.push(`select=${p.select}`);
     if(p.order)q.push(`order=${p.order}`);
     url+=q.join('&');
-    const r=await fetch(url,{headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`}});
+    const r=await fetch(url,{headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${tok}`}});
     return r.json();
   },
   async ins(t,d){
-    const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}`,{method:'POST',headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(d)});
+    const tok=await this._tok();
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}`,{method:'POST',headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${tok}`,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(d)});
     return r.json();
   }
 };

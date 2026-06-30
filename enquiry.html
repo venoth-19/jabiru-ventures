@@ -401,14 +401,14 @@ async function submitForm(e){
       property_type: proptype || null
     });
 
-    // Step 3 — create job as Lead
+    // Step 3 — create job via RPC (SECURITY DEFINER bypasses anon table restriction)
     const jobNotes = [insptype, notes].filter(Boolean).join(' — ') || null;
-    await dbPost('jobs', {
-      customer_id:     customerId,
-      property_id:     propertyId,
-      status:          'Lead',
-      inspection_date: date || null,
-      notes:           jobNotes
+    await dbPost('rpc/create_enquiry_job', {
+      p_customer_id:     customerId,
+      p_property_id:     propertyId,
+      p_status:          'Lead',
+      p_inspection_date: date || null,
+      p_notes:           jobNotes
     });
 
     // Show success state

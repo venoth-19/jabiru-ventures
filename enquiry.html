@@ -378,35 +378,15 @@ async function submitForm(e){
   const notes    = document.getElementById('f_notes').value.trim();
 
   try {
-    // Pre-generate UUIDs client-side — avoids needing SELECT grant on anon role
-    const customerId  = crypto.randomUUID();
-    const propertyId  = crypto.randomUUID();
-
-    // Step 1 — create customer record
-    await dbPost('customers', {
-      id:          customerId,
-      full_name:   name,
-      phone:       phone,
-      email:       email || null,
-      lead_source: 'Website'
-    });
-
-    // Step 2 — create property record
-    await dbPost('properties', {
-      id:            propertyId,
-      customer_id:   customerId,
-      address:       address,
-      city:          city,
-      state:         state,
-      property_type: proptype || null
-    });
-
-    // Step 3 — create job via RPC (SECURITY DEFINER bypasses anon table restriction)
     const jobNotes = [insptype, notes].filter(Boolean).join(' — ') || null;
-    await dbPost('rpc/create_enquiry_job', {
-      p_customer_id:     customerId,
-      p_property_id:     propertyId,
-      p_status:          'Lead',
+    await dbPost('rpc/submit_enquiry', {
+      p_name:            name,
+      p_phone:           phone,
+      p_email:           email || null,
+      p_address:         address,
+      p_city:            city,
+      p_state:           state,
+      p_property_type:   proptype || null,
       p_inspection_date: date || null,
       p_notes:           jobNotes
     });

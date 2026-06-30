@@ -266,13 +266,11 @@ const KANCOLS=[
   {key:'Completed',color:'#4A35A0',bg:'#EEEBFC'},
 ];
 
+let _authTok=null;
 const sb={
-  async _tok(){
-    const {data:{session}}=await sbAuth.auth.getSession();
-    return session?.access_token||SUPABASE_ANON_KEY;
-  },
+  _tok(){ return _authTok||SUPABASE_ANON_KEY; },
   async q(t,p={}){
-    const tok=await this._tok();
+    const tok=this._tok();
     let url=`${SUPABASE_URL}/rest/v1/${t}?`;
     const q=[];
     if(p.select)q.push(`select=${p.select}`);
@@ -282,7 +280,7 @@ const sb={
     return r.json();
   },
   async ins(t,d){
-    const tok=await this._tok();
+    const tok=this._tok();
     const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}`,{method:'POST',headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${tok}`,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(d)});
     return r.json();
   }
@@ -497,6 +495,7 @@ async function checkAuth() {
   try {
     const { data: { session } } = await sbAuth.auth.getSession();
     if (!session) { window.location.href = 'login.html'; return false; }
+    _authTok = session.access_token;
     return true;
   } catch(e) { return true; }
 }

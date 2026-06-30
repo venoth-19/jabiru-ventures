@@ -290,7 +290,13 @@ let allData=[],filtered=[];
 
 async function loadData(){
   try{
-    const [customers,properties,jobs]=await Promise.all([sb.q('customers',{select:'*',order:'created_at.desc'}),sb.q('properties',{select:'*'}),sb.q('jobs',{select:'*',order:'created_at.desc'})]);
+    const [cr,pr,jr]=await Promise.all([
+      sbAuth.from('customers').select('*').order('created_at',{ascending:false}),
+      sbAuth.from('properties').select('*'),
+      sbAuth.from('jobs').select('*').order('created_at',{ascending:false})
+    ]);
+    if(cr.error)throw cr.error;
+    const customers=cr.data||[],properties=pr.data||[],jobs=jr.data||[];
     allData=customers.map(c=>({...c,properties:properties.filter(p=>p.customer_id===c.id),latestJob:jobs.filter(j=>j.customer_id===c.id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))[0]||null}));
     init();
   }catch(e){demo();}

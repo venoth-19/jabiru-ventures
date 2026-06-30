@@ -417,7 +417,7 @@ async function submitForm(e){
     document.getElementById('successCard').style.display  = 'block';
 
   } catch(err){
-    errEl.textContent = 'Something went wrong. Please try again or WhatsApp us at +6014-942 0756.';
+    errEl.innerHTML = '<strong>Error:</strong> ' + (err.message||'Unknown error') + '<br><small style="opacity:.7">WhatsApp us if this keeps happening: +6014-942 0756</small>';
     errEl.style.display = 'block';
     btn.disabled = false;
     btn.textContent = 'Submit Enquiry →';

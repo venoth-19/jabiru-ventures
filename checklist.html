@@ -1018,8 +1018,9 @@ async function submitChecklist() {
   if (recEl) state.recommendations = recEl.value;
 
   const payload = buildPayload();
+  let inspectionId = null;
   try {
-    await saveToSupabase(payload);
+    inspectionId = await saveToSupabase(payload);
   } catch(e) {
     showToast('Save failed: ' + (e.message || 'connection error') + ' — your draft is kept');
     btn.disabled = false;
@@ -1038,10 +1039,9 @@ async function submitChecklist() {
   document.getElementById('success-screen').classList.add('show');
 
   // Auto-redirect to report review after 2 seconds if inspection was saved
+  // (report-review.html looks up by inspection id via the ?inspection= param, not job id)
   setTimeout(() => {
-    const params = new URLSearchParams(window.location.search);
-    const jobId = params.get('job');
-    if (jobId) window.location.href = `report-review.html?job=${jobId}`;
+    if (inspectionId) window.location.href = `report-review.html?inspection=${inspectionId}`;
   }, 2500);
 }
 
@@ -1085,6 +1085,7 @@ async function saveToSupabase(payload) {
     const err = await r.json().catch(() => ({}));
     throw new Error(err.message || `HTTP ${r.status}`);
   }
+  const rows = await r.json().catch(() => []);
   if (state.jobId) {
     await fetch(`${SUPABASE_URL}/rest/v1/jobs?id=eq.${state.jobId}`, {
       method: 'PATCH',
@@ -1092,6 +1093,7 @@ async function saveToSupabase(payload) {
       body: JSON.stringify({ status: 'Inspected' })
     });
   }
+  return rows[0]?.id || null;
 }
 
 function showToast(msg) {

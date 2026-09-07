@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Jabiru Ventures — Site Inspection</title>
-<script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -314,9 +313,9 @@ input[type=file]{display:none}
 <input type="file" id="photo-input" accept="image/*" capture="environment">
 
 <script>
-
-
-
+const SUPABASE_URL      = 'https://siglqixiefvrxfvpxttj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_3LA7_L8nCwysXKAI7-0Faw_v6m7iTL_';
+const CLAUDE_API_KEY    = 'YOUR_CLAUDE_API_KEY';
 
 const SECTIONS = [
   { id:'exterior', label:'Exterior', icon:'🏠', areas:[
@@ -1019,9 +1018,21 @@ async function submitChecklist() {
   if (recEl) state.recommendations = recEl.value;
 
   const payload = buildPayload();
-  if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
-    try { await saveToSupabase(payload); } catch(e) {}
+  try {
+    await saveToSupabase(payload);
+  } catch(e) {
+    showToast('Save failed: ' + (e.message || 'connection error') + ' — your draft is kept');
+    btn.disabled = false;
+    txt.textContent = 'Submit Inspection';
+    return;
   }
+  // Best-effort: pre-draft the AI report so it's already waiting in report-review.html.
+  // Not awaited/blocking — report-review.html can also generate it on-demand if this fails.
+  fetch(`${SUPABASE_URL}/functions/v1/report-generator`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).catch(() => {});
   try { localStorage.removeItem('jabiru_inspection_draft'); } catch(e) {}
   document.getElementById('success-score').textContent = calculateScore() + '%';
   document.getElementById('success-screen').classList.add('show');
@@ -1065,11 +1076,15 @@ function buildPayload() {
 }
 
 async function saveToSupabase(payload) {
-  await fetch(`${SUPABASE_URL}/rest/v1/inspections`, {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/inspections`, {
     method: 'POST',
     headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
     body: JSON.stringify(payload)
   });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error(err.message || `HTTP ${r.status}`);
+  }
   if (state.jobId) {
     await fetch(`${SUPABASE_URL}/rest/v1/jobs?id=eq.${state.jobId}`, {
       method: 'PATCH',
@@ -1092,8 +1107,6 @@ const sbAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 (async()=>{ try{ const {data:{session}}=await sbAuth.auth.getSession(); if(!session) window.location.href='login.html'; }catch(e){} })();
 </script>
 
-
-
 <!-- NAV BAR -->
 <style>
 .app-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #D4E3EF;display:flex;z-index:200;box-shadow:0 -2px 12px rgba(12,35,64,.08)}
@@ -1107,7 +1120,6 @@ const sbAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   <a href="checklist.html" class="nav-item active"><div class="nav-icon">📋</div><div class="nav-label">Checklist</div></a>
   <a href="report-review.html" class="nav-item"><div class="nav-icon">📄</div><div class="nav-label">Reports</div></a>
   <a href="analytics.html" class="nav-item"><div class="nav-icon">📊</div><div class="nav-label">Analytics</div></a>
-  <a href="whatsapp-parser.html" class="nav-item"><div class="nav-icon">💬</div><div class="nav-label">Parser</div></a>
 </nav>
 
 </body>

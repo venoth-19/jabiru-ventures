@@ -1,0 +1,34 @@
+# For detailed configuration reference documentation, visit:
+# https://supabase.com/docs/guides/local-development/cli/config
+# A string used to distinguish different Supabase projects on the same host. Defaults to the
+# working directory name when running `supabase init`.
+project_id = "jabiru-ventures"
+
+[api]
+enabled = true
+# Port to use for the API URL.
+port = 54321
+# Schemas to expose in your API. Tables, views and stored procedures in this schema will get API
+# endpoints. `public` and `graphql_public` schemas are included by default.
+schemas = ["public", "graphql_public"]
+# Extra schemas to add to the search_path of every request.
+extra_search_path = ["public", "extensions"]
+# The maximum number of rows returns from a view, table, or stored procedure. Limits payload size
+# for accidental or malicious requests.
+max_rows = 1000
+
+# NOTE: whatsapp-webhook and booking-reminders from the developer's branch are
+# intentionally NOT registered here — no automated WhatsApp chatbot, and no
+# Meta WhatsApp Business API usage anywhere in this project.
+
+[functions.report-generator]
+enabled = true
+verify_jwt = false
+import_map = "./functions/report-generator/deno.json"
+entrypoint = "./functions/report-generator/index.ts"
+
+[functions.invoice-generator]
+enabled = true
+verify_jwt = false
+import_map = "./functions/invoice-generator/deno.json"
+entrypoint = "./functions/invoice-generator/index.ts"

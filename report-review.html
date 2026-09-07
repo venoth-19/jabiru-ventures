@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Jabiru Ventures — Report Review</title>
-<script src="config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
 <style>
@@ -255,9 +254,9 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-he
 <div class="toast" id="toast"></div>
 
 <script>
-
-
-
+const SUPABASE_URL      = 'https://siglqixiefvrxfvpxttj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_3LA7_L8nCwysXKAI7-0Faw_v6m7iTL_';
+const CLAUDE_API_KEY    = 'YOUR_CLAUDE_API_KEY';
 
 const SECTIONS = [
   { id:'summary',         label:'Summary',          icon:'📋' },
@@ -836,8 +835,6 @@ const sbAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 (async()=>{ try{ const {data:{session}}=await sbAuth.auth.getSession(); if(!session) window.location.href='login.html'; }catch(e){} })();
 </script>
 
-
-
 <!-- PRINT CSS -->
 <style>
 @media print {
@@ -863,7 +860,6 @@ const sbAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   <a href="checklist.html" class="nav-item"><div class="nav-icon">📋</div><div class="nav-label">Checklist</div></a>
   <a href="report-review.html" class="nav-item active"><div class="nav-icon">📄</div><div class="nav-label">Reports</div></a>
   <a href="analytics.html" class="nav-item"><div class="nav-icon">📊</div><div class="nav-label">Analytics</div></a>
-  <a href="whatsapp-parser.html" class="nav-item"><div class="nav-icon">💬</div><div class="nav-label">Parser</div></a>
 </nav>
 
 </body>

@@ -300,7 +300,10 @@ async function loadData(){
     const customers=cr.data||[],properties=pr.data||[],jobs=jr.data||[];
     allData=customers.map(c=>({...c,properties:properties.filter(p=>p.customer_id===c.id),latestJob:jobs.filter(j=>j.customer_id===c.id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))[0]||null}));
     init();
-  }catch(e){demo();}
+  }catch(e){
+    showToast('Failed to load data: '+(e.message||'connection error'));
+    init();
+  }
 }
 
 function demo(){
@@ -434,6 +437,7 @@ function openDetail(id){
     <div style="margin-bottom:16px"><div class="dhead">Customer</div>${d.email?dr('Email',d.email):''}${d.race?dr('Race',d.race):''}${d.lead_source?dr('Source',d.lead_source):''}</div>
     <div style="margin-bottom:16px"><div class="dhead">Property</div>${prop.address?dr('Address',prop.address):''}${prop.city?dr('Location',`${prop.city}, ${prop.state||''}`):''}${prop.property_type?dr('Type',prop.property_type):''}${prop.developer?dr('Developer',prop.developer):''}</div>
     ${job.status?`<div style="margin-bottom:16px"><div class="dhead">Job</div>${dr('Status',`<span class="status-pill ${pillClass(job.status)}">${job.status}</span>`)}${job.invoice_no?dr('Invoice',job.invoice_no):''}${job.price?dr('Price',`<strong style="color:var(--blue);font-family:'JetBrains Mono',monospace">${rm(job.price)}</strong>`):''}${job.inspection_date?dr('Date',job.inspection_date):''}${job.report_recipient?dr('Report to',job.report_recipient):''}</div>`:''}
+    ${job.id?`<div style="margin-bottom:16px"><div class="dhead">Invoices</div><div style="display:grid;gap:6px;margin-top:10px"><button class="abtn" style="background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid);grid-column:1/-1" onclick="sendInvoice('${job.id}','deposit','${d.phone}')">📄 Send Deposit Invoice (50%)</button><button class="abtn" style="background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid);grid-column:1/-1" onclick="sendInvoice('${job.id}','completion','${d.phone}')">📄 Send Completion Invoice (30%)</button><button class="abtn" style="background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid);grid-column:1/-1" onclick="sendInvoice('${job.id}','final','${d.phone}')">📄 Send Final Invoice (20%)</button></div></div>`:''}
     <div class="abtns">
       <button class="abtn" onclick="callClient('${d.phone}')">📞 Call</button>
       <button class="abtn wa" onclick="whatsappClient('${d.phone}')">💬 WhatsApp</button>
@@ -447,9 +451,13 @@ function dr(k,v){return`<div class="drow"><span class="dk">${k}</span><span clas
 function callClient(p){window.location.href=`tel:${p}`;}
 function whatsappClient(p){window.open(`https://wa.me/60${p.replace(/^0/,'')}`, '_blank');}
 
-function cycleStatus(id){
+async function cycleStatus(id){
   const d=allData.find(x=>x.id===id);if(!d||!d.latestJob)return;
   const next=STATUSES[(STATUSES.indexOf(d.latestJob.status)+1)%STATUSES.length];
+  if(d.latestJob.id){
+    const {error}=await sbAuth.from('jobs').update({status:next}).eq('id',d.latestJob.id);
+    if(error){showToast('Failed to save status: '+error.message);return;}
+  }
   d.latestJob.status=next;
   applyFilters();updateStats();closeModal('detail-modal');
   showToast(`Status → ${next}`);
@@ -464,17 +472,32 @@ async function saveClient(){
   const city=document.getElementById('f-city2').value.trim();
   const state=document.getElementById('f-state').value.trim();
   if(!name||!phone||!addr||!city||!state){showToast('Please fill required fields');return;}
-  const nc={id:Date.now().toString(),full_name:name,phone,email:document.getElementById('f-email').value.trim(),race:document.getElementById('f-race2').value,lead_source:document.getElementById('f-source').value,properties:[{address:addr,city,state,property_type:document.getElementById('f-proptype').value,developer:document.getElementById('f-dev').value.trim()}],latestJob:{status:document.getElementById('f-status2').value,price:document.getElementById('f-price').value,inspection_date:document.getElementById('f-date').value,report_recipient:document.getElementById('f-recipient').value,invoice_no:`JV-${new Date().getFullYear()}-${String(allData.length+1).padStart(4,'0')}`}};
-  if(SUPABASE_URL!=='YOUR_SUPABASE_URL'){
-    try{
-      const cust=await sb.ins('customers',{full_name:name,phone,email:nc.email||null,race:nc.race||null,lead_source:nc.lead_source||null});
-      if(cust[0]?.id){
-        await sb.ins('properties',{customer_id:cust[0].id,address:addr,city,state,property_type:nc.properties[0].property_type||null,developer:nc.properties[0].developer||null});
-        if(nc.latestJob.price)await sb.ins('jobs',{customer_id:cust[0].id,status:nc.latestJob.status,price:nc.latestJob.price,inspection_date:nc.latestJob.inspection_date||null,report_recipient:nc.latestJob.report_recipient});
-      }
-    }catch(e){console.log(e);}
-  }
-  allData.unshift(nc);init();closeModal('add-modal');clearForm();showToast(`${name} added`);
+  const email=document.getElementById('f-email').value.trim();
+  const race=document.getElementById('f-race2').value;
+  const source=document.getElementById('f-source').value;
+  const proptype=document.getElementById('f-proptype').value;
+  const dev=document.getElementById('f-dev').value.trim();
+  const status=document.getElementById('f-status2').value;
+  const price=document.getElementById('f-price').value;
+  const date=document.getElementById('f-date').value;
+  const recipient=document.getElementById('f-recipient').value;
+  try{
+    // Reuse existing customer if phone already exists (avoids duplicate-key error)
+    let custId=null;
+    const existing=await sbAuth.from('customers').select('id').eq('phone',phone).maybeSingle();
+    if(existing.data){custId=existing.data.id;}
+    else{
+      const ins=await sbAuth.from('customers').insert({full_name:name,phone,email:email||null,race:race||null,lead_source:source||null}).select().single();
+      if(ins.error)throw ins.error;
+      custId=ins.data.id;
+    }
+    const propIns=await sbAuth.from('properties').insert({customer_id:custId,address:addr,city,state,property_type:proptype||null,developer:dev||null}).select().single();
+    if(propIns.error)throw propIns.error;
+    const jobIns=await sbAuth.from('jobs').insert({customer_id:custId,property_id:propIns.data.id,status,price:price||null,inspection_date:date||null,report_recipient:recipient});
+    if(jobIns.error)throw jobIns.error;
+  }catch(e){showToast('Save failed: '+(e.message||'error'));return;}
+  closeModal('add-modal');clearForm();showToast(`${name} added`);
+  loadData();
 }
 
 function clearForm(){
@@ -493,6 +516,33 @@ function exportCSV(){
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function closeOnOverlay(e,id){if(e.target.id===id)closeModal(id);}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+async function sendInvoice(jobId, milestone, phone){
+  const labels={deposit:'Deposit (50%)',completion:'Completion (30%)',final:'Final (20%)'};
+  const input=prompt(`Enter RM amount for ${labels[milestone]} invoice:`);
+  if(!input)return;
+  const amount=parseFloat(input);
+  if(isNaN(amount)||amount<=0){showToast('Invalid amount');return;}
+  showToast('Generating invoice...');
+  try{
+    const tok=_authTok||SUPABASE_ANON_KEY;
+    const res=await fetch(`${SUPABASE_URL}/functions/v1/invoice-generator`,{
+      method:'POST',
+      headers:{'Authorization':`Bearer ${tok}`,'Content-Type':'application/json'},
+      body:JSON.stringify({job_id:jobId,milestone,amount})
+    });
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'Failed');
+    showToast(`Invoice ${data.invoice_ref} emailed!`);
+    // No automated WhatsApp send — offer the owner a prefilled manual share instead.
+    if(data.pdf_url && phone){
+      const msg=`Hi, here's your invoice ${data.invoice_ref} (${labels[milestone]}): ${data.pdf_url}`;
+      if(confirm('Also open WhatsApp to share the invoice link with the client?')){
+        window.open(`https://wa.me/60${phone.replace(/^0/,'')}?text=${encodeURIComponent(msg)}`, '_blank');
+      }
+    }
+  }catch(e){showToast('Failed: '+e.message);}
+}
 
 // ── AUTH ──────────────────────────────────
 const { createClient } = supabase;
@@ -529,7 +579,6 @@ body{padding-bottom:70px}
   <a href="checklist.html" class="nav-item"><div class="nav-icon">📋</div><div class="nav-label">Checklist</div></a>
   <a href="report-review.html" class="nav-item"><div class="nav-icon">📄</div><div class="nav-label">Reports</div></a>
   <a href="analytics.html" class="nav-item"><div class="nav-icon">📊</div><div class="nav-label">Analytics</div></a>
-  <a href="whatsapp-parser.html" class="nav-item"><div class="nav-icon">💬</div><div class="nav-label">Parser</div></a>
 </nav>
 
 </body>

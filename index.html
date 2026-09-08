@@ -551,7 +551,7 @@ const sbAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 async function checkAuth() {
   try {
     const { data: { session } } = await sbAuth.auth.getSession();
-    if (!session) { window.location.href = 'login.html'; return false; }
+    if (!session) { window.location.href = 'login.html?redirect=' + encodeURIComponent(location.pathname + location.search); return false; }
     _authTok = session.access_token;
     return true;
   } catch(e) { return true; }

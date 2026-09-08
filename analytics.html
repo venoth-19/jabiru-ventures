@@ -664,7 +664,7 @@ function showToast(msg) {
 // ── AUTH ──────────────────────────────────
 const { createClient } = supabase;
 const sbAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-(async()=>{ try{ const {data:{session}}=await sbAuth.auth.getSession(); if(!session) window.location.href='login.html'; }catch(e){} })();
+(async()=>{ try{ const {data:{session}}=await sbAuth.auth.getSession(); if(!session) window.location.href='login.html?redirect='+encodeURIComponent(location.pathname+location.search); }catch(e){} })();
 </script>
 
 <!-- NAV BAR -->

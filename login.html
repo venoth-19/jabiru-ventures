@@ -113,10 +113,16 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+function redirectTarget() {
+  const params = new URLSearchParams(window.location.search);
+  const r = params.get('redirect');
+  return r ? decodeURIComponent(r) : 'index.html';
+}
+
 // If already logged in, redirect
 window.addEventListener('load', async () => {
   const { data: { session } } = await sb.auth.getSession();
-  if (session) window.location.href = 'index.html';
+  if (session) window.location.href = redirectTarget();
 });
 
 async function login() {
@@ -139,7 +145,7 @@ async function login() {
       txt.textContent = 'Sign in';
     } else {
       document.getElementById('success-msg').classList.add('show');
-      setTimeout(() => window.location.href = 'index.html', 800);
+      setTimeout(() => window.location.href = redirectTarget(), 800);
     }
   } catch(e) {
     showError('Connection error. Please try again.');

@@ -270,6 +270,10 @@ input[type=file]{display:none}
 <div class="content" id="main-content"></div>
 
 <div class="submit-area">
+  <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);margin-bottom:10px;cursor:pointer">
+    <input type="checkbox" id="needs-ai-report" style="width:16px;height:16px">
+    Needs AI-drafted report (no developer app for this job)
+  </label>
   <div class="bottom-bar">
     <button class="submit-btn" id="submit-btn" onclick="submitChecklist()">
       <span id="submit-text">Submit Inspection Report</span>
@@ -282,7 +286,7 @@ input[type=file]{display:none}
   <div class="success-icon">✓</div>
   <div class="success-title">Inspection submitted!</div>
   <div class="success-score" id="success-score">100%</div>
-  <div class="success-sub">Your checklist has been saved. AI is drafting the full report.</div>
+  <div class="success-sub" id="success-sub">Your checklist has been saved.</div>
   <div class="success-ref">
     <div class="success-ref-lbl">Job reference</div>
     <div class="success-ref-val" id="success-ref">JV-2025-0000</div>
@@ -1027,13 +1031,21 @@ async function submitChecklist() {
     txt.textContent = 'Submit Inspection';
     return;
   }
-  // Best-effort: pre-draft the AI report so it's already waiting in report-review.html.
-  // Not awaited/blocking — report-review.html can also generate it on-demand if this fails.
-  fetch(`${SUPABASE_URL}/functions/v1/report-generator`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  }).catch(() => {});
+  // Only jobs with no developer app of their own need an AI-drafted report (Path B/C) —
+  // most jobs (Path A, developer has their own app) skip this entirely, since it costs
+  // real Claude API usage. Best-effort / not awaited — report-review.html can also
+  // generate it on-demand if this fails.
+  const needsReport = document.getElementById('needs-ai-report')?.checked;
+  if (needsReport) {
+    fetch(`${SUPABASE_URL}/functions/v1/report-generator`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(() => {});
+  }
+  document.getElementById('success-sub').textContent = needsReport
+    ? 'Your checklist has been saved. AI is drafting the full report.'
+    : 'Your checklist has been saved.';
   try { localStorage.removeItem('jabiru_inspection_draft'); } catch(e) {}
   document.getElementById('success-score').textContent = calculateScore() + '%';
   document.getElementById('success-screen').classList.add('show');

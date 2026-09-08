@@ -538,10 +538,20 @@ function removeInvoice(btn, invId, jobId){
   deleteInvoice(invId, jobId);
 }
 
+// Keeps allData (and therefore the dashboard cards' payment badges) in sync
+// with the DB after any invoice change, without needing a full page reload.
+async function refreshJobInvoices(jobId){
+  const {data}=await sbAuth.from('invoices').select('*').eq('job_id',jobId);
+  const d=allData.find(x=>x.latestJob&&x.latestJob.id===jobId);
+  if(d) d.latestJob.invoices=data||[];
+  applyFilters();
+}
+
 async function deleteInvoice(invId, jobId){
   const {error}=await sbAuth.from('invoices').delete().eq('id',invId);
   if(error){showToast('Failed to remove: '+error.message);return;}
   loadInvoicesForJob(jobId);
+  refreshJobInvoices(jobId);
   showToast('Invoice removed');
 }
 
@@ -552,6 +562,7 @@ async function toggleInvoicePaid(invId, jobId){
   const {error}=await sbAuth.from('invoices').update({paid:newPaid,paid_at:newPaid?new Date().toISOString():null}).eq('id',invId);
   if(error){showToast('Failed to update: '+error.message);return;}
   loadInvoicesForJob(jobId);
+  refreshJobInvoices(jobId);
 }
 
 function dr(k,v){return`<div class="drow"><span class="dk">${k}</span><span class="dv">${v}</span></div>`;}
@@ -663,6 +674,7 @@ async function confirmSendInvoice(){
     });
     const data=await res.json();
     if(!res.ok)throw new Error(data.error||'Failed');
+    refreshJobInvoices(jobId);
     document.getElementById('inv-success-sub').textContent=`Invoice ${data.invoice_ref} generated and emailed.`;
     const waBtn=document.getElementById('inv-wa-btn');
     if(data.pdf_url && phone){

@@ -516,6 +516,7 @@ function openDetail(id){
       ${d.phone?`<a class="abtn wa" style="text-align:center;text-decoration:none;display:block" href="https://wa.me/60${d.phone.replace(/^0/,'')}" target="_blank" rel="noopener">💬 WhatsApp</a>`:`<button class="abtn wa" onclick="showToast('No phone number on file for this client')">💬 WhatsApp</button>`}
       <button class="abtn primary" onclick="cycleStatus('${id}')">⟳ Next status</button>
       <button class="abtn" onclick="closeModal('detail-modal')">✕ Close</button>
+      <button class="abtn" id="del-client-btn" style="grid-column:1/-1;background:var(--red-bg);color:#A02020;border-color:#F0C2C2" onclick="removeClient(this,'${id}')">🗑 Delete Client</button>
     </div>`;
   document.getElementById('detail-modal').classList.add('open');
   if(job.id) loadInvoicesForJob(job.id);
@@ -592,6 +593,37 @@ function dr(k,v){return`<div class="drow"><span class="dk">${k}</span><span clas
 function callClient(p){
   if(!p){showToast('No phone number on file for this client');return;}
   window.location.href=`tel:${p}`;
+}
+
+function removeClient(btn, customerId){
+  if(btn.dataset.armed!=='1'){
+    btn.dataset.armed='1';
+    btn.textContent='Tap again to permanently delete';
+    btn.dataset.timer=setTimeout(()=>{btn.dataset.armed='0';btn.textContent='🗑 Delete Client';},3000);
+    return;
+  }
+  clearTimeout(btn.dataset.timer);
+  deleteClient(customerId);
+}
+
+async function deleteClient(customerId){
+  const d=allData.find(x=>x.id===customerId);if(!d)return;
+  // invoices.job_id has NO ACTION (not cascade) on delete, so they must go
+  // first — properties/jobs/inspections all cascade from customers cleanly.
+  // A customer can have more than one job (e.g. repeat enquiry submissions),
+  // so clean up invoices across all of them, not just latestJob.
+  const {data:jobs,error:jobErr}=await sbAuth.from('jobs').select('id').eq('customer_id',customerId);
+  if(jobErr){showToast('Failed to delete: '+jobErr.message);return;}
+  const jobIds=(jobs||[]).map(j=>j.id);
+  if(jobIds.length){
+    const {error:invErr}=await sbAuth.from('invoices').delete().in('job_id',jobIds);
+    if(invErr){showToast('Failed to delete: '+invErr.message);return;}
+  }
+  const {error}=await sbAuth.from('customers').delete().eq('id',customerId);
+  if(error){showToast('Failed to delete client: '+error.message);return;}
+  allData=allData.filter(x=>x.id!==customerId);
+  applyFilters();updateStats();closeModal('detail-modal');
+  showToast(`${d.full_name} deleted`);
 }
 
 async function setJobStatus(customerId, newStatus){

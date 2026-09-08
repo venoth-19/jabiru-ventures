@@ -83,6 +83,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .inv-no{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace}
 .price{font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--blue)}
 
+.pay-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;letter-spacing:.2px;white-space:nowrap}
+.pay-paid{background:var(--green-bg);color:#0A7A4C}
+.pay-settling{background:var(--amber-bg);color:#8A5A0A}
+.pay-unpaid{background:var(--red-bg);color:#A02020}
 .pill-lead{background:#EEF2F7;color:#456B8C}
 .pill-won{background:var(--green-bg);color:#0A7A4C}
 .pill-booked{background:var(--blue-light);color:var(--blue-dark)}
@@ -313,13 +317,15 @@ let allData=[],filtered=[];
 
 async function loadData(){
   try{
-    const [cr,pr,jr]=await Promise.all([
+    const [cr,pr,jr,ir]=await Promise.all([
       sbAuth.from('customers').select('*').order('created_at',{ascending:false}),
       sbAuth.from('properties').select('*'),
-      sbAuth.from('jobs').select('*').order('created_at',{ascending:false})
+      sbAuth.from('jobs').select('*').order('created_at',{ascending:false}),
+      sbAuth.from('invoices').select('*')
     ]);
     if(cr.error)throw cr.error;
-    const customers=cr.data||[],properties=pr.data||[],jobs=jr.data||[];
+    const customers=cr.data||[],properties=pr.data||[],jobs=jr.data||[],invoices=ir.data||[];
+    jobs.forEach(j=>{j.invoices=invoices.filter(i=>i.job_id===j.id);});
     allData=customers.map(c=>({...c,properties:properties.filter(p=>p.customer_id===c.id),latestJob:jobs.filter(j=>j.customer_id===c.id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))[0]||null}));
     init();
   }catch(e){
@@ -380,6 +386,16 @@ function avatarColors(race){return{Malay:['#D4EDDF','#0A5C35'],Chinese:['#FDDEDE
 function pillClass(s){return{Lead:'pill-lead',Won:'pill-won',Booked:'pill-booked',Inspected:'pill-inspected',Completed:'pill-completed',Cancelled:'pill-cancelled'}[s]||'pill-lead';}
 function tagClass(type,val){if(type==='race')return`tag-${(val||'others').toLowerCase()}`;if(type==='prop')return`tag-${(val||'others').toLowerCase()}`;return'tag-gen';}
 function rm(p){return p?`RM${parseFloat(p).toLocaleString('en-MY',{minimumFractionDigits:0})}`:'—';}
+function rmPrecise(p){return `RM${(parseFloat(p)||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})}`;}
+function paymentStatus(job){
+  if(!job||!job.price||job.status==='Lead')return null;
+  const invs=job.invoices||[];
+  if(!invs.length)return null;
+  const paid=invs.filter(i=>i.paid).reduce((s,i)=>s+parseFloat(i.amount),0);
+  if(paid<=0)return{label:'💰 Unpaid',cls:'pay-unpaid'};
+  if(paid>=parseFloat(job.price))return{label:'✅ Paid',cls:'pay-paid'};
+  return{label:'⏳ Settling',cls:'pay-settling'};
+}
 
 function renderCards(){
   const c=document.getElementById('cards-container'),e=document.getElementById('empty-cards');
@@ -390,9 +406,10 @@ function renderCards(){
     const [bg,fg]=avatarColors(d.race);
     const initials=d.full_name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
     const status=job.status||'Lead';
+    const pay=paymentStatus(job);
     return`<div class="ccard" onclick="openDetail('${d.id}')">
       <div class="ccard-top"><div class="ccard-left"><div class="avatar" style="background:${bg};color:${fg}">${initials}</div><div><div class="cname">${d.full_name}</div><div class="cphone">${d.phone}</div></div></div><span class="status-pill ${pillClass(status)}">${status}</span></div>
-      <div class="ccard-mid">${d.race?`<span class="tag ${tagClass('race',d.race)}">${d.race}</span>`:''} ${prop.property_type?`<span class="tag ${tagClass('prop',prop.property_type)}">${prop.property_type}</span>`:''} ${prop.city?`<span class="tag tag-gen">📍 ${prop.city}</span>`:''} ${d.lead_source?`<span class="tag tag-gen">${d.lead_source}</span>`:''}</div>
+      <div class="ccard-mid">${d.race?`<span class="tag ${tagClass('race',d.race)}">${d.race}</span>`:''} ${prop.property_type?`<span class="tag ${tagClass('prop',prop.property_type)}">${prop.property_type}</span>`:''} ${prop.city?`<span class="tag tag-gen">📍 ${prop.city}</span>`:''} ${d.lead_source?`<span class="tag tag-gen">${d.lead_source}</span>`:''} ${pay?`<span class="pay-badge ${pay.cls}">${pay.label}</span>`:''}</div>
       <div class="ccard-bot"><span class="inv-no">${job.invoice_no||'No invoice'}</span><span class="price">${rm(job.price)}</span></div>
     </div>`;
   }).join('');
@@ -485,17 +502,37 @@ async function loadInvoicesForJob(jobId){
         <div style="font-weight:600;color:var(--text);font-size:12px">${inv.invoice_ref}</div>
         <div style="font-size:11px;color:var(--text3)">${inv.milestone.charAt(0).toUpperCase()+inv.milestone.slice(1)} · ${new Date(inv.sent_at).toLocaleDateString()}</div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px">${rm(inv.amount)}</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px">${rmPrecise(inv.amount)}</span>
         <button onclick="toggleInvoicePaid('${inv.id}','${jobId}')" style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:20px;border:1px solid ${inv.paid?'#1DA851':'var(--border)'};background:${inv.paid?'#E8F8EF':'var(--bg3)'};color:${inv.paid?'#1DA851':'var(--text2)'};cursor:pointer;white-space:nowrap">${inv.paid?'✓ Paid':'Mark paid'}</button>
+        <button class="inv-del-btn" data-id="${inv.id}" onclick="removeInvoice(this,'${inv.id}','${jobId}')" style="font-size:10px;font-weight:700;padding:4px 7px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);color:var(--text3);cursor:pointer">🗑</button>
       </div>
     </div>`).join('');
   container.innerHTML=`
     <div style="display:flex;gap:16px;margin-bottom:4px;font-size:11px">
-      <div><span style="color:var(--text3)">Paid:</span> <strong style="color:#1DA851">${rm(paidTotal)}</strong></div>
-      <div><span style="color:var(--text3)">Outstanding:</span> <strong style="color:${unpaidTotal>0?'#C0392B':'var(--text)'}">${rm(unpaidTotal)}</strong></div>
+      <div><span style="color:var(--text3)">Paid:</span> <strong style="color:#1DA851">${rmPrecise(paidTotal)}</strong></div>
+      <div><span style="color:var(--text3)">Outstanding:</span> <strong style="color:${unpaidTotal>0?'#C0392B':'var(--text)'}">${rmPrecise(unpaidTotal)}</strong></div>
     </div>
     ${rows}`;
+}
+
+function removeInvoice(btn, invId, jobId){
+  if(btn.dataset.armed!=='1'){
+    btn.dataset.armed='1';
+    btn.textContent='Sure?';
+    btn.style.background='var(--red-bg)';btn.style.color='#A02020';btn.style.borderColor='#A02020';
+    btn.dataset.timer=setTimeout(()=>{btn.dataset.armed='0';btn.textContent='🗑';btn.style.background='var(--bg3)';btn.style.color='var(--text3)';btn.style.borderColor='var(--border)';},3000);
+    return;
+  }
+  clearTimeout(btn.dataset.timer);
+  deleteInvoice(invId, jobId);
+}
+
+async function deleteInvoice(invId, jobId){
+  const {error}=await sbAuth.from('invoices').delete().eq('id',invId);
+  if(error){showToast('Failed to remove: '+error.message);return;}
+  loadInvoicesForJob(jobId);
+  showToast('Invoice removed');
 }
 
 async function toggleInvoicePaid(invId, jobId){

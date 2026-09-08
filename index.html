@@ -437,7 +437,7 @@ function openDetail(id){
     <div style="margin-bottom:16px"><div class="dhead">Customer</div>${d.email?dr('Email',d.email):''}${d.race?dr('Race',d.race):''}${d.lead_source?dr('Source',d.lead_source):''}</div>
     <div style="margin-bottom:16px"><div class="dhead">Property</div>${prop.address?dr('Address',prop.address):''}${prop.city?dr('Location',`${prop.city}, ${prop.state||''}`):''}${prop.property_type?dr('Type',prop.property_type):''}${prop.developer?dr('Developer',prop.developer):''}</div>
     ${job.status?`<div style="margin-bottom:16px"><div class="dhead">Job</div>${dr('Status',`<span class="status-pill ${pillClass(job.status)}">${job.status}</span>`)}${job.invoice_no?dr('Invoice',job.invoice_no):''}${job.price?dr('Price',`<strong style="color:var(--blue);font-family:'JetBrains Mono',monospace">${rm(job.price)}</strong>`):''}${job.inspection_date?dr('Date',job.inspection_date):''}${job.report_recipient?dr('Report to',job.report_recipient):''}</div>`:''}
-    ${job.id?`<div style="margin-bottom:16px"><div class="dhead">Invoices</div><div style="display:grid;gap:6px;margin-top:10px"><button class="abtn" style="background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid);grid-column:1/-1" onclick="sendInvoice('${job.id}','deposit','${d.phone}')">📄 Send Deposit Invoice (50%)</button><button class="abtn" style="background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid);grid-column:1/-1" onclick="sendInvoice('${job.id}','completion','${d.phone}')">📄 Send Completion Invoice (30%)</button><button class="abtn" style="background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid);grid-column:1/-1" onclick="sendInvoice('${job.id}','final','${d.phone}')">📄 Send Final Invoice (20%)</button></div></div>`:''}
+    ${job.id?`<div style="margin-bottom:16px"><div class="dhead">Invoices</div><div style="display:grid;gap:6px;margin-top:10px"><button class="abtn" style="background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid);grid-column:1/-1" onclick="sendInvoice('${job.id}','deposit','${d.phone}',${job.price||'null'})">📄 Send Deposit Invoice (50%)</button><button class="abtn" style="background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid);grid-column:1/-1" onclick="sendInvoice('${job.id}','completion','${d.phone}',${job.price||'null'})">📄 Send Completion Invoice (30%)</button><button class="abtn" style="background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid);grid-column:1/-1" onclick="sendInvoice('${job.id}','final','${d.phone}',${job.price||'null'})">📄 Send Final Invoice (20%)</button></div></div>`:''}
     <div class="abtns">
       <button class="abtn" onclick="callClient('${d.phone}')">📞 Call</button>
       <button class="abtn wa" onclick="whatsappClient('${d.phone}')">💬 WhatsApp</button>
@@ -517,11 +517,24 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function closeOnOverlay(e,id){if(e.target.id===id)closeModal(id);}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
-async function sendInvoice(jobId, milestone, phone){
+async function sendInvoice(jobId, milestone, phone, jobPrice){
   const labels={deposit:'Deposit (50%)',completion:'Completion (30%)',final:'Final (20%)'};
-  const input=prompt(`Enter RM amount for ${labels[milestone]} invoice:`);
-  if(!input)return;
-  const amount=parseFloat(input);
+  const pcts={deposit:0.5,completion:0.3,final:0.2};
+  let amount=null;
+  const suggested = jobPrice ? +(jobPrice*pcts[milestone]).toFixed(2) : null;
+  if(suggested){
+    if(confirm(`${labels[milestone]} invoice amount: RM${suggested.toFixed(2)} (${Math.round(pcts[milestone]*100)}% of RM${(+jobPrice).toFixed(2)})\n\nIs this correct?`)){
+      amount=suggested;
+    }else{
+      const input=prompt(`Enter RM amount for ${labels[milestone]} invoice:`, suggested);
+      if(!input)return;
+      amount=parseFloat(input);
+    }
+  }else{
+    const input=prompt(`Enter RM amount for ${labels[milestone]} invoice:`);
+    if(!input)return;
+    amount=parseFloat(input);
+  }
   if(isNaN(amount)||amount<=0){showToast('Invalid amount');return;}
   showToast('Generating invoice...');
   try{

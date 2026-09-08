@@ -102,7 +102,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .kol-head{padding:10px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--bg2)}
 .kol-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px}
 .kol-count{font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:600;background:var(--bg3);border:1px solid var(--border);padding:1px 7px;border-radius:20px;color:var(--text2)}
-.kol-body{padding:8px;display:flex;flex-direction:column;gap:6px;min-height:80px}
+.kol-body{padding:8px;display:flex;flex-direction:column;gap:6px;min-height:80px;transition:background .15s}
+.kol-body.drag-over{background:var(--blue-light)}
+.kcard{cursor:grab}
+.kcard:active{cursor:grabbing}
 .kcard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 11px;cursor:pointer;transition:all .15s;box-shadow:var(--shadow)}
 .kcard:hover{border-color:var(--blue-mid);box-shadow:var(--shadow-md);transform:translateY(-1px)}
 .kcard-name{font-size:12px;font-weight:700;margin-bottom:3px;color:var(--text)}
@@ -200,6 +203,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       <select class="fselect" id="f-value" onchange="applyFilters()"><option value="">All values</option><option value="0-500">Below RM500</option><option value="500-1000">RM500–1,000</option><option value="1000-2000">RM1,000–2,000</option><option value="2000+">Above RM2,000</option></select>
       <select class="fselect" id="f-status" onchange="applyFilters()"><option value="">All statuses</option><option>Lead</option><option>Won</option><option>Booked</option><option>Inspected</option><option>Completed</option></select>
       <select class="fselect" id="f-sort" onchange="applyFilters()"><option value="new">Newest first</option><option value="old">Oldest first</option></select>
+      <button class="fselect" style="background:var(--red-bg);color:#A02020;border-color:#F0C2C2" onclick="clearAllFilters()">✕ Clear filters</button>
     </div>
   </div>
 
@@ -354,6 +358,12 @@ function populateCityFilter(){
   document.getElementById('f-city').innerHTML='<option value="">All cities</option>'+cities.map(c=>`<option>${c}</option>`).join('');
 }
 
+function clearAllFilters(){
+  document.getElementById('search').value='';
+  ['f-type','f-race','f-city','f-value','f-status'].forEach(id=>{document.getElementById(id).value='';});
+  applyFilters();
+}
+
 function applyFilters(){
   const search=document.getElementById('search').value.toLowerCase();
   const type=document.getElementById('f-type').value;
@@ -438,10 +448,10 @@ function renderKanban(){
     return`<div class="kol">
       <div class="kol-head"><span class="kol-title" style="color:${col.color}">${col.key}</span><span class="kol-count">${cards.length}</span></div>
       ${total>0?`<div style="padding:6px 10px 0;font-size:10px;font-weight:700;color:${col.color};font-family:'JetBrains Mono',monospace">${rm(total)}</div>`:''}
-      <div class="kol-body">${cards.length===0?'<div class="kol-empty">No jobs</div>':cards.map(d=>{
+      <div class="kol-body" ondragover="onKanbanDragOver(event)" ondragleave="onKanbanDragLeave(event)" ondrop="onKanbanDrop(event,'${col.key}')">${cards.length===0?'<div class="kol-empty">No jobs</div>':cards.map(d=>{
         const prop=d.properties[0]||{},job=d.latestJob||{};
         const [bg,fg]=avatarColors(d.race);
-        return`<div class="kcard" onclick="openDetail('${d.id}')">
+        return`<div class="kcard" draggable="true" ondragstart="onKanbanDragStart(event,'${d.id}')" onclick="openDetail('${d.id}')">
           <div class="kcard-name">${d.full_name}</div>
           <div class="kcard-prop">🏠 ${prop.property_type||'—'} · ${prop.city||'—'}</div>
           <div class="kcard-bot"><span class="kcard-price">${rm(job.price)}</span>${d.race?`<span class="kcard-tag" style="background:${avatarColors(d.race)[0]};color:${avatarColors(d.race)[1]}">${d.race}</span>`:''}</div>
@@ -465,7 +475,12 @@ function renderTable(){
 function updateStats(){
   document.getElementById('s-total').textContent=allData.length;
   document.getElementById('s-active').textContent=allData.filter(d=>['Won','Booked','Inspected'].includes(d.latestJob?.status)).length;
-  document.getElementById('s-revenue').textContent=rm(allData.filter(d=>d.latestJob?.status==='Completed').reduce((s,d)=>s+parseFloat(d.latestJob.price||0),0));
+  // Revenue = actual money collected (paid invoices), regardless of which
+  // pipeline stage the job currently sits in — not just Completed jobs' price.
+  document.getElementById('s-revenue').textContent=rm(allData.reduce((s,d)=>{
+    const invs=d.latestJob?.invoices||[];
+    return s+invs.filter(i=>i.paid).reduce((si,i)=>si+parseFloat(i.amount),0);
+  },0));
   document.getElementById('s-done').textContent=allData.filter(d=>d.latestJob?.status==='Completed').length;
 }
 
@@ -550,7 +565,7 @@ async function refreshJobInvoices(jobId){
   const {data}=await sbAuth.from('invoices').select('*').eq('job_id',jobId);
   const d=allData.find(x=>x.latestJob&&x.latestJob.id===jobId);
   if(d) d.latestJob.invoices=data||[];
-  applyFilters();
+  applyFilters();updateStats();
 }
 
 async function deleteInvoice(invId, jobId){
@@ -577,16 +592,36 @@ function callClient(p){
   window.location.href=`tel:${p}`;
 }
 
+async function setJobStatus(customerId, newStatus){
+  const d=allData.find(x=>x.id===customerId);if(!d||!d.latestJob)return;
+  if(d.latestJob.status===newStatus)return;
+  if(d.latestJob.id){
+    const {error}=await sbAuth.from('jobs').update({status:newStatus}).eq('id',d.latestJob.id);
+    if(error){showToast('Failed to save status: '+error.message);return;}
+  }
+  d.latestJob.status=newStatus;
+  applyFilters();updateStats();
+  showToast(`${d.full_name} → ${newStatus}`);
+}
+
 async function cycleStatus(id){
   const d=allData.find(x=>x.id===id);if(!d||!d.latestJob)return;
   const next=STATUSES[(STATUSES.indexOf(d.latestJob.status)+1)%STATUSES.length];
-  if(d.latestJob.id){
-    const {error}=await sbAuth.from('jobs').update({status:next}).eq('id',d.latestJob.id);
-    if(error){showToast('Failed to save status: '+error.message);return;}
-  }
-  d.latestJob.status=next;
-  applyFilters();updateStats();closeModal('detail-modal');
-  showToast(`Status → ${next}`);
+  await setJobStatus(id, next);
+  closeModal('detail-modal');
+}
+
+function onKanbanDragStart(e, customerId){
+  e.dataTransfer.setData('text/plain', customerId);
+  e.dataTransfer.effectAllowed='move';
+}
+function onKanbanDragOver(e){e.preventDefault();e.currentTarget.classList.add('drag-over');}
+function onKanbanDragLeave(e){e.currentTarget.classList.remove('drag-over');}
+function onKanbanDrop(e, targetStatus){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const customerId=e.dataTransfer.getData('text/plain');
+  if(customerId) setJobStatus(customerId, targetStatus);
 }
 
 function openAdd(){document.getElementById('add-modal').classList.add('open');}

@@ -391,10 +391,20 @@ function paymentStatus(job){
   if(!job||!job.price||job.status==='Lead')return null;
   const invs=job.invoices||[];
   if(!invs.length)return null;
-  const paid=invs.filter(i=>i.paid).reduce((s,i)=>s+parseFloat(i.amount),0);
-  if(paid<=0)return{label:'💰 Unpaid',cls:'pay-unpaid'};
-  if(paid>=parseFloat(job.price))return{label:'✅ Paid',cls:'pay-paid'};
-  return{label:'⏳ Settling',cls:'pay-settling'};
+  // Walk the deposit → completion → final sequence and report the current stage.
+  const stageOf=ms=>{
+    const matching=invs.filter(i=>i.milestone===ms);
+    if(!matching.length)return null; // not invoiced yet
+    return matching.some(i=>i.paid)?'paid':'unpaid';
+  };
+  const dep=stageOf('deposit'),comp=stageOf('completion'),fin=stageOf('final');
+  if(fin==='paid')return{label:'✅ Fully Paid',cls:'pay-paid'};
+  if(fin==='unpaid')return{label:'💰 Unpaid Final',cls:'pay-unpaid'};
+  if(comp==='paid')return{label:'⏳ Paid Completion',cls:'pay-settling'};
+  if(comp==='unpaid')return{label:'💰 Unpaid Completion',cls:'pay-unpaid'};
+  if(dep==='paid')return{label:'⏳ Paid Deposit',cls:'pay-settling'};
+  if(dep==='unpaid')return{label:'💰 Unpaid Deposit',cls:'pay-unpaid'};
+  return null;
 }
 
 function renderCards(){

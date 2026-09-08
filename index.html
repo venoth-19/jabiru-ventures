@@ -249,6 +249,27 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
   </div>
 </div>
 
+<div class="overlay" id="invoice-modal" onclick="closeOnOverlay(event,'invoice-modal')">
+  <div class="modal">
+    <div class="modal-drag"></div>
+    <div id="inv-step-amount">
+      <div class="modal-title" id="inv-modal-title">Send Invoice</div>
+      <div style="font-size:12px;color:var(--text2);margin:-8px 0 16px" id="inv-modal-sub"></div>
+      <div class="fg"><label class="fl">Amount (RM)</label><input class="fi" id="inv-amount" type="number" step="0.01" inputmode="decimal"></div>
+      <div style="font-size:11px;color:var(--red,#C0392B);min-height:16px;margin:-8px 0 10px" id="inv-modal-error"></div>
+      <button class="sbtn" id="inv-send-btn" onclick="confirmSendInvoice()">Send Invoice</button>
+      <button class="cbtn" onclick="closeModal('invoice-modal')">Cancel</button>
+    </div>
+    <div id="inv-step-success" style="display:none;text-align:center;padding:8px 0 4px">
+      <div style="font-size:38px;margin-bottom:6px">✅</div>
+      <div class="modal-title" style="margin-bottom:6px">Invoice sent</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:20px" id="inv-success-sub"></div>
+      <button class="sbtn" id="inv-wa-btn" style="background:var(--green,#1DA851)">💬 Open WhatsApp to share</button>
+      <button class="cbtn" onclick="closeModal('invoice-modal')">Done</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="detail-modal" onclick="closeOnOverlay(event,'detail-modal')">
   <div class="modal" id="detail-content"></div>
 </div>
@@ -517,26 +538,35 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function closeOnOverlay(e,id){if(e.target.id===id)closeModal(id);}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
-async function sendInvoice(jobId, milestone, phone, jobPrice){
-  const labels={deposit:'Deposit (50%)',completion:'Completion (30%)',final:'Final (20%)'};
-  const pcts={deposit:0.5,completion:0.3,final:0.2};
-  let amount=null;
-  const suggested = jobPrice ? +(jobPrice*pcts[milestone]).toFixed(2) : null;
-  if(suggested){
-    if(confirm(`${labels[milestone]} invoice amount: RM${suggested.toFixed(2)} (${Math.round(pcts[milestone]*100)}% of RM${(+jobPrice).toFixed(2)})\n\nIs this correct?`)){
-      amount=suggested;
-    }else{
-      const input=prompt(`Enter RM amount for ${labels[milestone]} invoice:`, suggested);
-      if(!input)return;
-      amount=parseFloat(input);
-    }
-  }else{
-    const input=prompt(`Enter RM amount for ${labels[milestone]} invoice:`);
-    if(!input)return;
-    amount=parseFloat(input);
-  }
-  if(isNaN(amount)||amount<=0){showToast('Invalid amount');return;}
-  showToast('Generating invoice...');
+const INV_LABELS={deposit:'Deposit (50%)',completion:'Completion (30%)',final:'Final (20%)'};
+const INV_PCTS={deposit:0.5,completion:0.3,final:0.2};
+let _pendingInvoice=null;
+
+function sendInvoice(jobId, milestone, phone, jobPrice){
+  const suggested = jobPrice ? +(jobPrice*INV_PCTS[milestone]).toFixed(2) : null;
+  _pendingInvoice={jobId,milestone,phone};
+  document.getElementById('inv-modal-title').textContent=`Send ${INV_LABELS[milestone]} Invoice`;
+  document.getElementById('inv-modal-sub').textContent = suggested
+    ? `Suggested: ${Math.round(INV_PCTS[milestone]*100)}% of RM${(+jobPrice).toFixed(2)} — edit if needed`
+    : 'No price on file for this job — enter the amount manually';
+  document.getElementById('inv-modal-error').textContent='';
+  const amtEl=document.getElementById('inv-amount');
+  amtEl.value = suggested ?? '';
+  document.getElementById('inv-step-amount').style.display='block';
+  document.getElementById('inv-step-success').style.display='none';
+  document.getElementById('invoice-modal').classList.add('open');
+  setTimeout(()=>amtEl.focus(),150);
+}
+
+async function confirmSendInvoice(){
+  if(!_pendingInvoice)return;
+  const {jobId,milestone,phone}=_pendingInvoice;
+  const amount=parseFloat(document.getElementById('inv-amount').value);
+  const errEl=document.getElementById('inv-modal-error');
+  if(isNaN(amount)||amount<=0){errEl.textContent='Enter a valid amount';return;}
+  errEl.textContent='';
+  const btn=document.getElementById('inv-send-btn');
+  btn.disabled=true;btn.textContent='Generating…';
   try{
     const tok=_authTok||SUPABASE_ANON_KEY;
     const res=await fetch(`${SUPABASE_URL}/functions/v1/invoice-generator`,{
@@ -546,15 +576,24 @@ async function sendInvoice(jobId, milestone, phone, jobPrice){
     });
     const data=await res.json();
     if(!res.ok)throw new Error(data.error||'Failed');
-    showToast(`Invoice ${data.invoice_ref} emailed!`);
-    // No automated WhatsApp send — offer the owner a prefilled manual share instead.
+    document.getElementById('inv-success-sub').textContent=`Invoice ${data.invoice_ref} generated and emailed.`;
+    const waBtn=document.getElementById('inv-wa-btn');
     if(data.pdf_url && phone){
-      const msg=`Hi, here's your invoice ${data.invoice_ref} (${labels[milestone]}): ${data.pdf_url}`;
-      if(confirm('Also open WhatsApp to share the invoice link with the client?')){
+      waBtn.style.display='block';
+      waBtn.onclick=()=>{
+        const msg=`Hi, here's your invoice ${data.invoice_ref} (${INV_LABELS[milestone]}): ${data.pdf_url}`;
         window.open(`https://wa.me/60${phone.replace(/^0/,'')}?text=${encodeURIComponent(msg)}`, '_blank');
-      }
+      };
+    }else{
+      waBtn.style.display='none';
     }
-  }catch(e){showToast('Failed: '+e.message);}
+    document.getElementById('inv-step-amount').style.display='none';
+    document.getElementById('inv-step-success').style.display='block';
+  }catch(e){
+    errEl.textContent='Failed: '+e.message;
+  }finally{
+    btn.disabled=false;btn.textContent='Send Invoice';
+  }
 }
 
 // ── AUTH ──────────────────────────────────

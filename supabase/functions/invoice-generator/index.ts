@@ -46,7 +46,8 @@ const GMAIL_SENDER_EMAIL = Deno.env.get("GMAIL_SENDER_EMAIL")!;
 const COMPANY = {
   name: "Jabiru Ventures",
   ssm: "202303027559 (003464550-H)",
-  address: "T1-21-18, Bayu Residensi @SeriTemenggung, Jln Temenggung, 68100 Batu Caves, Selangor",
+  addressLine1: "T1-21-18, Bayu Residensi @SeriTemenggung, Jln Temenggung,",
+  addressLine2: "68100 Batu Caves, Selangor",
   phone: "60149420756",
   email: "admin@jabiru-ventures.com",
   website: "https://jabiru-ventures.com/",
@@ -215,8 +216,10 @@ async function generateInvoicePdf(
   y -= 12;
   page.drawText(`SSM: ${COMPANY.ssm}`, { x: 40, y, size: 8, font: fontRegular, color: COLOR_GREY });
   y -= 12;
-  page.drawText(COMPANY.address, { x: 40, y, size: 8, font: fontRegular, color: COLOR_GREY, maxWidth: 250 });
-  y -= 22;
+  page.drawText(COMPANY.addressLine1, { x: 40, y, size: 8, font: fontRegular, color: COLOR_GREY });
+  y -= 11;
+  page.drawText(COMPANY.addressLine2, { x: 40, y, size: 8, font: fontRegular, color: COLOR_GREY });
+  y -= 15;
   page.drawText(`Tel: ${COMPANY.phone}`, { x: 40, y, size: 8, font: fontRegular, color: COLOR_GREY });
   y -= 12;
   page.drawText(`Email: ${COMPANY.email}`, { x: 40, y, size: 8, font: fontRegular, color: COLOR_GREY });

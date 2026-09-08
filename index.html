@@ -199,6 +199,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       <select class="fselect" id="f-city" onchange="applyFilters()"><option value="">All cities</option></select>
       <select class="fselect" id="f-value" onchange="applyFilters()"><option value="">All values</option><option value="0-500">Below RM500</option><option value="500-1000">RM500–1,000</option><option value="1000-2000">RM1,000–2,000</option><option value="2000+">Above RM2,000</option></select>
       <select class="fselect" id="f-status" onchange="applyFilters()"><option value="">All statuses</option><option>Lead</option><option>Won</option><option>Booked</option><option>Inspected</option><option>Completed</option></select>
+      <select class="fselect" id="f-sort" onchange="applyFilters()"><option value="new">Newest first</option><option value="old">Oldest first</option></select>
     </div>
   </div>
 
@@ -269,7 +270,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       <div style="font-size:38px;margin-bottom:6px">✅</div>
       <div class="modal-title" style="margin-bottom:6px">Invoice sent</div>
       <div style="font-size:12px;color:var(--text2);margin-bottom:20px" id="inv-success-sub"></div>
-      <button class="sbtn" id="inv-wa-btn" style="background:var(--green,#1DA851)">💬 Open WhatsApp to share</button>
+      <a class="sbtn" id="inv-wa-btn" target="_blank" rel="noopener" style="display:none;box-sizing:border-box;background:var(--green,#1DA851);color:#fff;text-decoration:none">💬 Open WhatsApp to share</a>
       <button class="cbtn" onclick="closeModal('invoice-modal')">Done</button>
     </div>
   </div>
@@ -360,6 +361,7 @@ function applyFilters(){
   const city=document.getElementById('f-city').value;
   const value=document.getElementById('f-value').value;
   const status=document.getElementById('f-status').value;
+  const sort=document.getElementById('f-sort').value;
   filtered=allData.filter(d=>{
     const prop=d.properties[0]||{},job=d.latestJob||{};
     if(search&&!`${d.full_name} ${d.phone} ${prop.address||''} ${prop.city||''}`.toLowerCase().includes(search))return false;
@@ -376,6 +378,10 @@ function applyFilters(){
     }
     return true;
   });
+  filtered.sort((a,b)=>{
+    const diff=new Date(b.created_at)-new Date(a.created_at);
+    return sort==='old'?-diff:diff;
+  });
   renderCards();renderKanban();renderTable();
   document.getElementById('result-count').textContent=filtered.length;
   document.getElementById('tb-clients').textContent=filtered.length;
@@ -388,7 +394,7 @@ function tagClass(type,val){if(type==='race')return`tag-${(val||'others').toLowe
 function rm(p){return p?`RM${parseFloat(p).toLocaleString('en-MY',{minimumFractionDigits:0})}`:'—';}
 function rmPrecise(p){return `RM${(parseFloat(p)||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})}`;}
 function paymentStatus(job){
-  if(!job||!job.price||job.status==='Lead')return null;
+  if(!job)return null;
   const invs=job.invoices||[];
   if(!invs.length)return null;
   // Walk the deposit → completion → final sequence and report the current stage.
@@ -678,11 +684,9 @@ async function confirmSendInvoice(){
     document.getElementById('inv-success-sub').textContent=`Invoice ${data.invoice_ref} generated and emailed.`;
     const waBtn=document.getElementById('inv-wa-btn');
     if(data.pdf_url && phone){
+      const msg=`Hi, here's your invoice ${data.invoice_ref} (${INV_LABELS[milestone]}): ${data.pdf_url}`;
+      waBtn.href=`https://wa.me/60${phone.replace(/^0/,'')}?text=${encodeURIComponent(msg)}`;
       waBtn.style.display='block';
-      waBtn.onclick=()=>{
-        const msg=`Hi, here's your invoice ${data.invoice_ref} (${INV_LABELS[milestone]}): ${data.pdf_url}`;
-        window.open(`https://wa.me/60${phone.replace(/^0/,'')}?text=${encodeURIComponent(msg)}`, '_blank');
-      };
     }else{
       waBtn.style.display='none';
     }

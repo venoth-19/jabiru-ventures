@@ -28,6 +28,12 @@
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
 
 // ── ENV VARIABLES ─────────────────────────────────────────────────────────────
@@ -408,8 +414,12 @@ async function sendInvoiceEmail(
 // ── MAIN HANDLER ──────────────────────────────────────────────────────────────
 
 serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    return new Response("Method not allowed", { status: 405, headers: corsHeaders });
   }
 
   // ── Parse request body ───────────────────────────────────────────────────
@@ -419,7 +429,7 @@ serve(async (req: Request) => {
   } catch {
     return new Response(
       JSON.stringify({ error: "Invalid JSON body" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
@@ -428,14 +438,14 @@ serve(async (req: Request) => {
   if (!job_id || !milestone || amount === undefined) {
     return new Response(
       JSON.stringify({ error: "job_id, milestone, and amount are required" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
   if (!["deposit", "completion", "final"].includes(milestone)) {
     return new Response(
       JSON.stringify({ error: "milestone must be 'deposit', 'completion', or 'final'" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
@@ -448,14 +458,14 @@ serve(async (req: Request) => {
     if (!job) {
       return new Response(
         JSON.stringify({ error: "Job not found" }),
-        { status: 404, headers: { "Content-Type": "application/json" } }
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
   } catch (err) {
     console.error("[Jabiru] ❌ Failed to fetch job:", err);
     return new Response(
       JSON.stringify({ error: "Failed to fetch job details" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
@@ -471,7 +481,7 @@ serve(async (req: Request) => {
     console.error("[Jabiru] ❌ PDF generation failed:", err);
     return new Response(
       JSON.stringify({ error: "Failed to generate invoice PDF" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
@@ -527,6 +537,6 @@ serve(async (req: Request) => {
       pdf_url: pdfUrl || null,
       message: "Invoice generated, uploaded, and emailed successfully",
     }),
-    { status: 200, headers: { "Content-Type": "application/json" } }
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
 });

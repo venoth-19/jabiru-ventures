@@ -34,6 +34,12 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 // ── ENV VARIABLES ─────────────────────────────────────────────────────────────
 const SB_URL = Deno.env.get("SB_URL")!;
 const SB_SERVICE_ROLE_KEY = Deno.env.get("SB_SERVICE_ROLE_KEY")!;
@@ -150,8 +156,12 @@ async function saveReportDraft(jobId: string, reportDraftJson: string): Promise<
 // ── MAIN HANDLER ──────────────────────────────────────────────────────────────
 
 serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    return new Response("Method not allowed", { status: 405, headers: corsHeaders });
   }
 
   // ── Parse request body ───────────────────────────────────────────────────
@@ -161,7 +171,7 @@ serve(async (req: Request) => {
   } catch {
     return new Response(
       JSON.stringify({ error: "Invalid JSON body" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
@@ -170,7 +180,7 @@ serve(async (req: Request) => {
   if (!job_id) {
     return new Response(
       JSON.stringify({ error: "job_id is required" }),
-      { status: 400, headers: { "Content-Type": "application/json" } }
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
@@ -183,7 +193,7 @@ serve(async (req: Request) => {
     if (!job) {
       return new Response(
         JSON.stringify({ error: "Job not found" }),
-        { status: 404, headers: { "Content-Type": "application/json" } }
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
     console.log(`[Jabiru] ✅ Job fetched: ${job.invoice_no}`);
@@ -191,7 +201,7 @@ serve(async (req: Request) => {
     console.error("[Jabiru] ❌ Failed to fetch job:", err);
     return new Response(
       JSON.stringify({ error: "Failed to fetch job details" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
@@ -207,7 +217,7 @@ serve(async (req: Request) => {
     console.error("[Jabiru] ❌ Claude report generation failed:", err);
     return new Response(
       JSON.stringify({ error: "Failed to generate report draft" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
@@ -219,7 +229,7 @@ serve(async (req: Request) => {
     console.error("[Jabiru] ❌ Failed to save report draft:", err);
     return new Response(
       JSON.stringify({ error: "Failed to save report draft" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
@@ -230,6 +240,6 @@ serve(async (req: Request) => {
       invoice_no: job.invoice_no,
       message: "Report draft generated and saved successfully",
     }),
-    { status: 200, headers: { "Content-Type": "application/json" } }
+    { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
 });

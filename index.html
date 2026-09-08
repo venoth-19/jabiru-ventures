@@ -451,9 +451,11 @@ function renderKanban(){
       <div class="kol-body" ondragover="onKanbanDragOver(event)" ondragleave="onKanbanDragLeave(event)" ondrop="onKanbanDrop(event,'${col.key}')">${cards.length===0?'<div class="kol-empty">No jobs</div>':cards.map(d=>{
         const prop=d.properties[0]||{},job=d.latestJob||{};
         const [bg,fg]=avatarColors(d.race);
+        const pay=paymentStatus(job);
         return`<div class="kcard" draggable="true" ondragstart="onKanbanDragStart(event,'${d.id}')" onclick="openDetail('${d.id}')">
           <div class="kcard-name">${d.full_name}</div>
           <div class="kcard-prop">🏠 ${prop.property_type||'—'} · ${prop.city||'—'}</div>
+          ${pay?`<div style="margin:4px 0"><span class="pay-badge ${pay.cls}">${pay.label}</span></div>`:''}
           <div class="kcard-bot"><span class="kcard-price">${rm(job.price)}</span>${d.race?`<span class="kcard-tag" style="background:${avatarColors(d.race)[0]};color:${avatarColors(d.race)[1]}">${d.race}</span>`:''}</div>
         </div>`;
       }).join('')}</div>

@@ -460,6 +460,7 @@ function openDetail(id){
     <div style="margin-bottom:16px"><div class="dhead">Property</div>${prop.address?dr('Address',prop.address):''}${prop.city?dr('Location',`${prop.city}, ${prop.state||''}`):''}${prop.property_type?dr('Type',prop.property_type):''}${prop.developer?dr('Developer',prop.developer):''}</div>
     ${job.status?`<div style="margin-bottom:16px"><div class="dhead">Job</div>${dr('Status',`<span class="status-pill ${pillClass(job.status)}">${job.status}</span>`)}${job.invoice_no?dr('Invoice',job.invoice_no):''}${job.price?dr('Price',`<strong style="color:var(--blue);font-family:'JetBrains Mono',monospace">${rm(job.price)}</strong>`):''}${job.inspection_date?dr('Date',job.inspection_date):''}${job.report_recipient?dr('Report to',job.report_recipient):''}</div>`:''}
     ${job.id?`<div style="margin-bottom:16px"><div class="dhead">Invoices</div><div style="display:grid;gap:6px;margin-top:10px"><button class="abtn" style="background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid);grid-column:1/-1" onclick="sendInvoice('${job.id}','deposit','${d.phone}',${job.price||'null'})">📄 Send Deposit Invoice (50%)</button><button class="abtn" style="background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid);grid-column:1/-1" onclick="sendInvoice('${job.id}','completion','${d.phone}',${job.price||'null'})">📄 Send Completion Invoice (30%)</button><button class="abtn" style="background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid);grid-column:1/-1" onclick="sendInvoice('${job.id}','final','${d.phone}',${job.price||'null'})">📄 Send Final Invoice (20%)</button></div></div>`:''}
+    ${job.id?`<div style="margin-bottom:16px"><div class="dhead">Payments</div><div id="inv-list-${job.id}" style="margin-top:8px;font-size:12px;color:var(--text2)">Loading…</div></div>`:''}
     <div class="abtns">
       <button class="abtn" onclick="callClient('${d.phone}')">📞 Call</button>
       <button class="abtn wa" onclick="whatsappClient('${d.phone}')">💬 WhatsApp</button>
@@ -467,6 +468,43 @@ function openDetail(id){
       <button class="abtn" onclick="closeModal('detail-modal')">✕ Close</button>
     </div>`;
   document.getElementById('detail-modal').classList.add('open');
+  if(job.id) loadInvoicesForJob(job.id);
+}
+
+async function loadInvoicesForJob(jobId){
+  const container=document.getElementById(`inv-list-${jobId}`);
+  if(!container)return;
+  const {data,error}=await sbAuth.from('invoices').select('*').eq('job_id',jobId).order('sent_at',{ascending:true});
+  if(error){container.innerHTML='<span style="color:#C0392B">Failed to load invoices</span>';return;}
+  if(!data||!data.length){container.innerHTML='No invoices sent yet.';return;}
+  const paidTotal=data.filter(i=>i.paid).reduce((s,i)=>s+parseFloat(i.amount),0);
+  const unpaidTotal=data.filter(i=>!i.paid).reduce((s,i)=>s+parseFloat(i.amount),0);
+  const rows=data.map(inv=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-weight:600;color:var(--text);font-size:12px">${inv.invoice_ref}</div>
+        <div style="font-size:11px;color:var(--text3)">${inv.milestone.charAt(0).toUpperCase()+inv.milestone.slice(1)} · ${new Date(inv.sent_at).toLocaleDateString()}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px">${rm(inv.amount)}</span>
+        <button onclick="toggleInvoicePaid('${inv.id}','${jobId}')" style="font-size:10px;font-weight:700;padding:4px 8px;border-radius:20px;border:1px solid ${inv.paid?'#1DA851':'var(--border)'};background:${inv.paid?'#E8F8EF':'var(--bg3)'};color:${inv.paid?'#1DA851':'var(--text2)'};cursor:pointer;white-space:nowrap">${inv.paid?'✓ Paid':'Mark paid'}</button>
+      </div>
+    </div>`).join('');
+  container.innerHTML=`
+    <div style="display:flex;gap:16px;margin-bottom:4px;font-size:11px">
+      <div><span style="color:var(--text3)">Paid:</span> <strong style="color:#1DA851">${rm(paidTotal)}</strong></div>
+      <div><span style="color:var(--text3)">Outstanding:</span> <strong style="color:${unpaidTotal>0?'#C0392B':'var(--text)'}">${rm(unpaidTotal)}</strong></div>
+    </div>
+    ${rows}`;
+}
+
+async function toggleInvoicePaid(invId, jobId){
+  const {data:current,error:fetchErr}=await sbAuth.from('invoices').select('paid').eq('id',invId).single();
+  if(fetchErr){showToast('Failed: '+fetchErr.message);return;}
+  const newPaid=!current.paid;
+  const {error}=await sbAuth.from('invoices').update({paid:newPaid,paid_at:newPaid?new Date().toISOString():null}).eq('id',invId);
+  if(error){showToast('Failed to update: '+error.message);return;}
+  loadInvoicesForJob(jobId);
 }
 
 function dr(k,v){return`<div class="drow"><span class="dk">${k}</span><span class="dv">${v}</span></div>`;}

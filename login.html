@@ -72,35 +72,83 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
   </div>
 
   <div class="login-card">
-    <div class="card-title">Welcome back</div>
-    <div class="card-sub">Sign in to access the Jabiru dashboard</div>
+    <div id="view-login">
+      <div class="card-title">Welcome back</div>
+      <div class="card-sub">Sign in to access the Jabiru dashboard</div>
 
-    <div class="form-group">
-      <label class="form-label">Email address</label>
-      <input class="form-input" id="email" type="email" placeholder="your@email.com" autocomplete="email">
+      <div class="form-group">
+        <label class="form-label">Email address</label>
+        <input class="form-input" id="email" type="email" placeholder="your@email.com" autocomplete="email">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <div class="pw-wrap">
+          <input class="form-input" id="password" type="password" placeholder="Enter your password" autocomplete="current-password">
+          <button class="pw-toggle" onclick="togglePw()" type="button" id="pw-eye">👁️</button>
+        </div>
+      </div>
+
+      <button class="login-btn" id="login-btn" onclick="login()">
+        <span id="login-text">Sign in</span>
+      </button>
+
+      <div class="error-msg" id="error-msg">
+        <span>⚠️</span><span id="error-text">Invalid email or password</span>
+      </div>
+      <div class="success-msg" id="success-msg">
+        <span>✓</span><span>Signed in — redirecting...</span>
+      </div>
+
+      <div style="text-align:center;margin-top:14px">
+        <a href="#" onclick="showView('forgot');return false" style="font-size:12px;color:var(--blue);text-decoration:none;font-weight:600">Forgot password?</a>
+      </div>
+
+      <div class="divider"></div>
+      <div class="hint">This system is for authorised Jabiru Ventures staff only.<br>Contact your administrator if you need access.</div>
     </div>
 
-    <div class="form-group">
-      <label class="form-label">Password</label>
-      <div class="pw-wrap">
-        <input class="form-input" id="password" type="password" placeholder="Enter your password" autocomplete="current-password">
-        <button class="pw-toggle" onclick="togglePw()" type="button" id="pw-eye">👁️</button>
+    <div id="view-forgot" style="display:none">
+      <div class="card-title">Reset your password</div>
+      <div class="card-sub">Enter your email and we'll send you a reset link</div>
+
+      <div class="form-group">
+        <label class="form-label">Email address</label>
+        <input class="form-input" id="forgot-email" type="email" placeholder="your@email.com" autocomplete="email">
+      </div>
+
+      <button class="login-btn" id="forgot-btn" onclick="sendResetLink()">
+        <span id="forgot-text">Send reset link</span>
+      </button>
+
+      <div class="error-msg" id="forgot-error"><span>⚠️</span><span id="forgot-error-text"></span></div>
+      <div class="success-msg" id="forgot-success"><span>✓</span><span>Check your email for a reset link.</span></div>
+
+      <div style="text-align:center;margin-top:14px">
+        <a href="#" onclick="showView('login');return false" style="font-size:12px;color:var(--blue);text-decoration:none;font-weight:600">← Back to sign in</a>
       </div>
     </div>
 
-    <button class="login-btn" id="login-btn" onclick="login()">
-      <span id="login-text">Sign in</span>
-    </button>
+    <div id="view-reset" style="display:none">
+      <div class="card-title">Set a new password</div>
+      <div class="card-sub">Choose a new password for your account</div>
 
-    <div class="error-msg" id="error-msg">
-      <span>⚠️</span><span id="error-text">Invalid email or password</span>
-    </div>
-    <div class="success-msg" id="success-msg">
-      <span>✓</span><span>Signed in — redirecting...</span>
-    </div>
+      <div class="form-group">
+        <label class="form-label">New password</label>
+        <input class="form-input" id="new-password" type="password" placeholder="At least 6 characters" autocomplete="new-password">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm new password</label>
+        <input class="form-input" id="confirm-password" type="password" placeholder="Repeat password" autocomplete="new-password">
+      </div>
 
-    <div class="divider"></div>
-    <div class="hint">This system is for authorised Jabiru Ventures staff only.<br>Contact your administrator if you need access.</div>
+      <button class="login-btn" id="reset-btn" onclick="setNewPassword()">
+        <span id="reset-text">Update password</span>
+      </button>
+
+      <div class="error-msg" id="reset-error"><span>⚠️</span><span id="reset-error-text"></span></div>
+      <div class="success-msg" id="reset-success"><span>✓</span><span>Password updated — redirecting...</span></div>
+    </div>
   </div>
 
   <div class="footer-note">Jabiru Ventures © 2025 · Powered by Jabiru CRM</div>
@@ -119,11 +167,94 @@ function redirectTarget() {
   return r ? decodeURIComponent(r) : 'index.html';
 }
 
-// If already logged in, redirect
+function showView(name) {
+  ['login', 'forgot', 'reset'].forEach(v => {
+    document.getElementById('view-' + v).style.display = v === name ? 'block' : 'none';
+  });
+}
+
+// Supabase fires PASSWORD_RECOVERY when the user lands here via the emailed
+// reset link (it logs them into a temporary recovery session automatically).
+sb.auth.onAuthStateChange((event) => {
+  if (event === 'PASSWORD_RECOVERY') {
+    showView('reset');
+  }
+});
+
+// If already logged in (and NOT here via a recovery link), redirect
 window.addEventListener('load', async () => {
+  if (window.location.hash.includes('type=recovery')) return; // let the listener above handle it
   const { data: { session } } = await sb.auth.getSession();
   if (session) window.location.href = redirectTarget();
 });
+
+async function sendResetLink() {
+  const email = document.getElementById('forgot-email').value.trim();
+  const btn = document.getElementById('forgot-btn');
+  const txt = document.getElementById('forgot-text');
+  document.getElementById('forgot-error').classList.remove('show');
+  document.getElementById('forgot-success').classList.remove('show');
+
+  if (!email) { showForgotError('Please enter your email'); return; }
+
+  btn.disabled = true;
+  txt.innerHTML = '<div class="spinner"></div>';
+
+  try {
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname
+    });
+    if (error) {
+      showForgotError(error.message);
+    } else {
+      document.getElementById('forgot-success').classList.add('show');
+    }
+  } catch (e) {
+    showForgotError('Connection error. Please try again.');
+  }
+  btn.disabled = false;
+  txt.textContent = 'Send reset link';
+}
+
+function showForgotError(msg) {
+  document.getElementById('forgot-error-text').textContent = msg;
+  document.getElementById('forgot-error').classList.add('show');
+}
+
+async function setNewPassword() {
+  const pw = document.getElementById('new-password').value;
+  const confirm = document.getElementById('confirm-password').value;
+  const btn = document.getElementById('reset-btn');
+  const txt = document.getElementById('reset-text');
+  document.getElementById('reset-error').classList.remove('show');
+
+  if (!pw || pw.length < 6) { showResetError('Password must be at least 6 characters'); return; }
+  if (pw !== confirm) { showResetError('Passwords do not match'); return; }
+
+  btn.disabled = true;
+  txt.innerHTML = '<div class="spinner"></div>';
+
+  try {
+    const { error } = await sb.auth.updateUser({ password: pw });
+    if (error) {
+      showResetError(error.message);
+      btn.disabled = false;
+      txt.textContent = 'Update password';
+    } else {
+      document.getElementById('reset-success').classList.add('show');
+      setTimeout(() => window.location.href = 'index.html', 1000);
+    }
+  } catch (e) {
+    showResetError('Connection error. Please try again.');
+    btn.disabled = false;
+    txt.textContent = 'Update password';
+  }
+}
+
+function showResetError(msg) {
+  document.getElementById('reset-error-text').textContent = msg;
+  document.getElementById('reset-error').classList.add('show');
+}
 
 async function login() {
   const email    = document.getElementById('email').value.trim();
@@ -168,7 +299,12 @@ function togglePw() {
   document.getElementById('pw-eye').textContent = inp.type === 'password' ? '👁️' : '🙈';
 }
 
-document.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (document.getElementById('view-forgot').style.display !== 'none') sendResetLink();
+  else if (document.getElementById('view-reset').style.display !== 'none') setNewPassword();
+  else login();
+});
 </script>
 </body>
 </html>

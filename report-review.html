@@ -216,6 +216,8 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-he
 
 <div class="section-tabs" id="section-tabs"></div>
 
+<div id="dev-banner" style="display:none;margin:0 16px 12px;padding:10px 14px;background:var(--amber-bg);border:1px solid var(--amber);border-radius:var(--r-sm);font-size:12px;color:var(--amber-dark)">⚠️ AI report writing is still under development — the text below is placeholder content, not a real generated report. Edit sections manually for now.</div>
+
 <div class="content" id="main-content"></div>
 
 <div class="send-options" id="send-options" style="display:none">
@@ -341,7 +343,13 @@ function loadReport() {
   } else {
     reportData = DEMO;
     updateHero();
+    showDevBanner();
   }
+}
+
+function showDevBanner(){
+  const b=document.getElementById('dev-banner');
+  if(b) b.style.display='block';
 }
 
 async function fetchReport(id) {
@@ -375,10 +383,11 @@ async function fetchReport(id) {
       } else if (!reportData.sections) {
         reportData.sections = DEMO.sections;
         reportData.sections.defects = extractDefectsFromSections(ins.sections);
+        showDevBanner();
       }
       updateHero();
     }
-  } catch(e) { reportData = DEMO; updateHero(); }
+  } catch(e) { reportData = DEMO; updateHero(); showDevBanner(); }
 }
 
 function extractDefectsFromSections(sections) {
@@ -725,7 +734,7 @@ function saveRecsEdit() {
 
 // ── REGEN ─────────────────────────────────
 async function regenSection(secId) {
-  if (CLAUDE_API_KEY === 'YOUR_CLAUDE_API_KEY') { showToast('Add Claude API key to regenerate'); return; }
+  if (CLAUDE_API_KEY === 'YOUR_CLAUDE_API_KEY') { showToast('🚧 AI regeneration is still under development — edit this section manually for now'); return; }
   showRegenOverlay(`AI rewriting ${secId} section...`);
   try {
     const j = reportData?.job || {};

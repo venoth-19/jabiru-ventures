@@ -270,10 +270,11 @@ input[type=file]{display:none}
 <div class="content" id="main-content"></div>
 
 <div class="submit-area">
-  <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);margin-bottom:10px;cursor:pointer">
+  <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);margin-bottom:2px;cursor:pointer">
     <input type="checkbox" id="needs-ai-report" style="width:16px;height:16px">
     Needs AI-drafted report (no developer app for this job)
   </label>
+  <div style="font-size:10px;color:var(--text3);margin:0 0 10px 24px">🚧 AI report writing is still under development — this won't produce a report yet</div>
   <div class="bottom-bar">
     <button class="submit-btn" id="submit-btn" onclick="submitChecklist()">
       <span id="submit-text">Submit Inspection Report</span>

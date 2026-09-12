@@ -11,7 +11,7 @@
   --blue:#1477C6;--blue-dark:#0C5499;--blue-deeper:#093D72;
   --blue-light:#EBF4FD;--blue-mid:#B8D8F5;--cyan:#1AB5D4;
   --bg:#F2F6FA;--bg2:#FFFFFF;--bg3:#EBF1F7;
-  --border:#D4E3EF;--border2:#AAC9E3;
+  --border:#A9C6DE;--border2:#AAC9E3;
   --text:#0C2340;--text2:#456B8C;--text3:#8AADC6;
   --green:#0EA86A;--green-bg:#E4F7EF;--green-dark:#0A7A4C;
   --amber:#D4820A;--amber-bg:#FDF2DC;--amber-dark:#8A5A0A;
@@ -49,6 +49,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .meta-item{background:var(--bg3);border-radius:var(--r-sm);padding:8px 10px;border:1px solid var(--border)}
 .meta-lbl{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
 .meta-val{font-size:12px;font-weight:600;color:var(--text)}
+.meta-select{cursor:pointer;border-color:var(--blue-mid);background:var(--blue-light);transition:all .15s}
+.meta-select:hover{border-color:var(--blue);box-shadow:0 0 0 3px rgba(20,119,198,.1)}
+.meta-select-row{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.meta-caret{color:var(--blue);font-size:12px;line-height:1;flex-shrink:0}
 
 .section-nav{padding:12px 16px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:78px;z-index:90}
 .section-nav::-webkit-scrollbar{display:none}
@@ -68,7 +72,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .sh-sub{font-size:11px;color:var(--blue-mid)}
 .sh-score{font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,.12);padding:6px 12px;border-radius:8px}
 
-.area-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow);transition:border-color .15s}
+.area-card{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow);transition:border-color .15s}
 .area-card.has-defects{border-color:var(--amber)}
 .area-card.has-critical{border-color:var(--red)}
 .area-head{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .15s}
@@ -273,9 +277,11 @@ input[type=file]{display:none}
     <div class="job-title" id="job-address">Loading job...</div>
     <div class="job-inv" id="job-inv">—</div>
   </div>
-  <div style="margin-top:10px"><button onclick="openJobPicker()" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-xs);color:var(--blue);font-family:inherit;font-size:11px;font-weight:700;padding:7px;cursor:pointer">🔄 Change job</button></div>
   <div class="job-meta">
-    <div class="meta-item"><div class="meta-lbl">Client</div><div class="meta-val" id="job-client">—</div></div>
+    <div class="meta-item meta-select" onclick="openJobPicker()" title="Click to choose a different client">
+      <div class="meta-lbl">Client</div>
+      <div class="meta-select-row"><div class="meta-val" id="job-client">—</div><span class="meta-caret">▾</span></div>
+    </div>
     <div class="meta-item"><div class="meta-lbl">Property type</div><div class="meta-val" id="job-type">—</div></div>
     <div class="meta-item"><div class="meta-lbl">Date</div><div class="meta-val" id="job-date">—</div></div>
     <div class="meta-item"><div class="meta-lbl">Inspector</div><div class="meta-val">Jabiru Team</div></div>

@@ -345,6 +345,53 @@ const SUPABASE_URL      = 'https://siglqixiefvrxfvpxttj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_3LA7_L8nCwysXKAI7-0Faw_v6m7iTL_';
 const CLAUDE_API_KEY    = 'YOUR_CLAUDE_API_KEY';
 
+// ── SAFETY HELPERS ────────────────────────────────────────────────────
+// Customer data arrives from a public web form, so it must never be
+// dropped into innerHTML unescaped.
+function esc(v){
+  return String(v==null?'':v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+// Strip a phone down to digits/+ so it can't break out of an HTML attribute.
+function phoneAttr(p){ return String(p==null?'':p).replace(/[^\d+]/g,''); }
+// Normalise to an international number for wa.me links.
+// 0123456789 -> 60123456789 (MY local); 6588870678 already has a country
+// code and is left alone; anything else passes through digits-only.
+function waNumber(p){
+  const d = String(p==null?'':p).replace(/[^\d]/g,'');
+  if(!d) return '';
+  if(d.startsWith('60') || d.startsWith('65')) return d;
+  if(d.startsWith('0'))  return '60' + d.slice(1);
+  return d;
+}
+
+
+// ── AUTH (session-based) ──────────────────────────────────────────────
+// Every DB request below is sent with the logged-in user's access token,
+// never the public anon key — the anon role has no table access at all.
+const { createClient } = supabase;
+const sbAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let _authTok = null;
+
+function gotoLogin(){
+  window.location.href = 'login.html?redirect=' + encodeURIComponent(location.pathname + location.search);
+}
+
+async function requireAuth(){
+  try{
+    const { data:{ session } } = await sbAuth.auth.getSession();
+    if(!session){ gotoLogin(); return false; }
+    _authTok = session.access_token;
+    return true;
+  }catch(e){
+    gotoLogin();   // fail closed: no session proof, no access
+    return false;
+  }
+}
+
+function authHeaders(extra){
+  return Object.assign({ 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + _authTok }, extra || {});
+}
+
 const SECTIONS = [
   { id:'exterior', label:'Exterior', icon:'🏠', areas:[
     { id:'facade',   name:'Building Facade',    icon:'🧱' },
@@ -398,7 +445,8 @@ let annotateColor = '#FF3B30';
 let isDrawing = false;
 let pendingPhotoCallback = null;
 
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
+  if(!await requireAuth()) return;   // no data work until the session is proven
   checkNetwork();
   setInterval(checkNetwork, 5000);
   window.addEventListener('online', checkNetwork);
@@ -446,7 +494,7 @@ async function loadPickerJobs() {
   const listEl = document.getElementById('jp-list');
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/jobs?select=*,customers(*),properties(*)&order=created_at.desc`, {
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+      headers: authHeaders()
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     _pickerJobs = await r.json();
@@ -467,9 +515,9 @@ function renderJobPickerList() {
   if (!jobs.length) { listEl.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:8px 0">No matching jobs.</div>'; return; }
   listEl.innerHTML = jobs.map(j => `
     <button class="jp-item" onclick="selectPickerJob('${j.id}')">
-      <div class="jp-name">${j.customers?.full_name || 'Unnamed client'}</div>
-      <div class="jp-sub">${j.properties?.address || 'No address'}${j.properties?.city ? ' · ' + j.properties.city : ''}</div>
-      <div class="jp-sub">${j.invoice_no || 'No invoice'} · ${j.status || 'Lead'}</div>
+      <div class="jp-name">${esc(j.customers?.full_name || 'Unnamed client')}</div>
+      <div class="jp-sub">${esc(j.properties?.address || 'No address')}${j.properties?.city ? ' · ' + esc(j.properties.city) : ''}</div>
+      <div class="jp-sub">${esc(j.invoice_no || 'No invoice')} · ${esc(j.status || 'Lead')}</div>
     </button>`).join('');
 }
 
@@ -485,7 +533,7 @@ async function fetchJobData(jobId) {
   if (SUPABASE_URL === 'YOUR_SUPABASE_URL') { updateJobCard(); return; }
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/jobs?id=eq.${jobId}&select=*,customers(*),properties(*)`, {
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+      headers: authHeaders()
     });
     const data = await r.json();
     if (data[0]) {
@@ -1106,7 +1154,7 @@ async function submitChecklist() {
   if (needsReport) {
     fetch(`${SUPABASE_URL}/functions/v1/report-generator`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + _authTok, 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     }).catch(() => {});
   }
@@ -1157,7 +1205,7 @@ function buildPayload() {
 async function saveToSupabase(payload) {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/inspections`, {
     method: 'POST',
-    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+    headers: authHeaders({ 'Content-Type': 'application/json', 'Prefer': 'return=representation' }),
     body: JSON.stringify(payload)
   });
   if (!r.ok) {
@@ -1168,7 +1216,7 @@ async function saveToSupabase(payload) {
   if (state.jobId) {
     await fetch(`${SUPABASE_URL}/rest/v1/jobs?id=eq.${state.jobId}`, {
       method: 'PATCH',
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ status: 'Inspected' })
     });
   }
@@ -1183,9 +1231,7 @@ function showToast(msg) {
 }
 
 // ── AUTH ──────────────────────────────────
-const { createClient } = supabase;
-const sbAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-(async()=>{ try{ const {data:{session}}=await sbAuth.auth.getSession(); if(!session) window.location.href='login.html?redirect='+encodeURIComponent(location.pathname+location.search); }catch(e){} })();
+
 </script>
 
 <!-- NAV BAR -->

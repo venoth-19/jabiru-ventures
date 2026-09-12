@@ -176,6 +176,33 @@ const SUPABASE_URL      = 'https://siglqixiefvrxfvpxttj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_3LA7_L8nCwysXKAI7-0Faw_v6m7iTL_';
 const CLAUDE_API_KEY    = 'YOUR_CLAUDE_API_KEY';
 
+// ── AUTH (session-based) ──────────────────────────────────────────────
+// Every DB request below is sent with the logged-in user's access token,
+// never the public anon key — the anon role has no table access at all.
+const { createClient } = supabase;
+const sbAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let _authTok = null;
+
+function gotoLogin(){
+  window.location.href = 'login.html?redirect=' + encodeURIComponent(location.pathname + location.search);
+}
+
+async function requireAuth(){
+  try{
+    const { data:{ session } } = await sbAuth.auth.getSession();
+    if(!session){ gotoLogin(); return false; }
+    _authTok = session.access_token;
+    return true;
+  }catch(e){
+    gotoLogin();   // fail closed: no session proof, no access
+    return false;
+  }
+}
+
+function authHeaders(extra){
+  return Object.assign({ 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + _authTok }, extra || {});
+}
+
 let allData    = { customers:[], properties:[], jobs:[] };
 let filtered   = { customers:[], properties:[], jobs:[] };
 let currentPeriod = 0;
@@ -228,6 +255,7 @@ const DEMO_JOBS = [
 ];
 
 window.addEventListener('load', async () => {
+  if(!await requireAuth()) return;   // no data work until the session is proven
   await loadData();
   applyPeriodFilter();
   renderAll();
@@ -235,19 +263,35 @@ window.addEventListener('load', async () => {
 
 async function loadData() {
   if (SUPABASE_URL === 'YOUR_SUPABASE_URL') {
-    allData = { customers: DEMO_CUSTOMERS, properties: DEMO_PROPERTIES, jobs: DEMO_JOBS };
+    allData = { customers: DEMO_CUSTOMERS, properties: DEMO_PROPERTIES, jobs: DEMO_JOBS, invoices: [] };
     return;
   }
   try {
-    const [c,p,j] = await Promise.all([
-      fetch(`${SUPABASE_URL}/rest/v1/customers?select=*`,   {headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`}}).then(r=>r.json()),
-      fetch(`${SUPABASE_URL}/rest/v1/properties?select=*`,  {headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`}}).then(r=>r.json()),
-      fetch(`${SUPABASE_URL}/rest/v1/jobs?select=*&order=created_at.desc`,{headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`}}).then(r=>r.json()),
+    const [c,p,j,inv] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/customers?select=*`,   {headers: authHeaders()}).then(r=>r.json()),
+      fetch(`${SUPABASE_URL}/rest/v1/properties?select=*`,  {headers: authHeaders()}).then(r=>r.json()),
+      fetch(`${SUPABASE_URL}/rest/v1/jobs?select=*&order=created_at.desc`,{headers: authHeaders()}).then(r=>r.json()),
+      fetch(`${SUPABASE_URL}/rest/v1/invoices?select=*`,{headers: authHeaders()}).then(r=>r.json()),
     ]);
-    allData = { customers: c||[], properties: p||[], jobs: j||[] };
+    allData = { customers: c||[], properties: p||[], jobs: j||[], invoices: inv||[] };
   } catch(e) {
-    allData = { customers: DEMO_CUSTOMERS, properties: DEMO_PROPERTIES, jobs: DEMO_JOBS };
+    allData = { customers: DEMO_CUSTOMERS, properties: DEMO_PROPERTIES, jobs: DEMO_JOBS, invoices: [] };
   }
+}
+
+
+// Revenue means cash actually received: the sum of invoices marked paid,
+// for the jobs currently in view. Keeps this page consistent with the CRM
+// dashboard, which also counts paid invoices rather than job prices.
+function paidRevenueFor(jobsInView){
+  const ids = new Set((jobsInView||[]).map(j => j.id));
+  return (allData.invoices||[])
+    .filter(i => i.paid && ids.has(i.job_id))
+    .reduce((s,i) => s + parseFloat(i.amount||0), 0);
+}
+function paidInvoicesFor(jobsInView){
+  const ids = new Set((jobsInView||[]).map(j => j.id));
+  return (allData.invoices||[]).filter(i => i.paid && ids.has(i.job_id));
 }
 
 function applyPeriodFilter() {
@@ -300,10 +344,11 @@ function renderKPIs() {
   const jobs      = filtered.jobs;
   const customers = filtered.customers;
   const completed = jobs.filter(j => j.status === 'Completed');
-  const revenue   = completed.reduce((s,j) => s + parseFloat(j.price||0), 0);
+  const revenue   = paidRevenueFor(jobs);
+  const paidInv   = paidInvoicesFor(jobs);
   const active    = jobs.filter(j => ['Won','Booked','Inspected'].includes(j.status)).length;
   const convRate  = jobs.length > 0 ? Math.round((completed.length / jobs.length) * 100) : 0;
-  const avgValue  = completed.length > 0 ? Math.round(revenue / completed.length) : 0;
+  const avgValue  = paidInv.length > 0 ? Math.round(revenue / paidInv.length) : 0;
 
   document.getElementById('kpi-section').innerHTML = `<div class="kpi-row">
     <div class="kpi-card blue">
@@ -348,10 +393,11 @@ function renderKPIs() {
 // ── REVENUE CHART ─────────────────────────
 function renderRevenueChart() {
   const months = getMonthsArray();
+  const inViewIds = new Set(filtered.jobs.map(j => j.id));
   const revenueByMonth = months.map(m => {
-    return filtered.jobs
-      .filter(j => j.status === 'Completed' && j.created_at?.startsWith(m))
-      .reduce((s,j) => s + parseFloat(j.price||0), 0);
+    return (allData.invoices||[])
+      .filter(i => i.paid && inViewIds.has(i.job_id) && (i.paid_at||i.sent_at||'').startsWith(m))
+      .reduce((s,i) => s + parseFloat(i.amount||0), 0);
   });
   const jobsByMonth = months.map(m => filtered.jobs.filter(j => j.created_at?.startsWith(m)).length);
   const labels = months.map(m => { const [y,mo] = m.split('-'); return new Date(y, parseInt(mo)-1).toLocaleDateString('en-MY',{month:'short',year:'2-digit'}); });
@@ -572,7 +618,7 @@ function generateInsights() {
   const jobs     = filtered.jobs;
   const customers = filtered.customers;
   const completed = jobs.filter(j => j.status === 'Completed');
-  const revenue   = completed.reduce((s,j) => s+parseFloat(j.price||0), 0);
+  const revenue   = paidRevenueFor(jobs);
   const propTypes = countBy(filtered.properties, 'property_type');
   const sources   = countBy(customers, 'lead_source');
   const cities    = countBy(filtered.properties, 'city');
@@ -596,7 +642,7 @@ function generateInsights() {
 async function regenInsights() {
   const jobs = filtered.jobs;
   const completed = jobs.filter(j=>j.status==='Completed');
-  const revenue = completed.reduce((s,j)=>s+parseFloat(j.price||0),0);
+  const revenue = paidRevenueFor(jobs);
   const propTypes = countBy(filtered.properties,'property_type');
   const sources = countBy(filtered.customers,'lead_source');
 
@@ -662,9 +708,7 @@ function showToast(msg) {
 }
 
 // ── AUTH ──────────────────────────────────
-const { createClient } = supabase;
-const sbAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-(async()=>{ try{ const {data:{session}}=await sbAuth.auth.getSession(); if(!session) window.location.href='login.html?redirect='+encodeURIComponent(location.pathname+location.search); }catch(e){} })();
+
 </script>
 
 <!-- NAV BAR -->

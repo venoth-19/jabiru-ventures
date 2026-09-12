@@ -42,6 +42,10 @@ const SB_SERVICE_ROLE_KEY = Deno.env.get("SB_SERVICE_ROLE_KEY")!;
 const GMAIL_APP_PASSWORD = Deno.env.get("GMAIL_APP_PASSWORD")!;
 const GMAIL_SENDER_EMAIL = Deno.env.get("GMAIL_SENDER_EMAIL")!;
 
+// How long an invoice share link stays valid (30 days) — long enough for
+// a client to pay, short enough that a leaked link expires.
+const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24 * 30;
+
 // ── COMPANY CONSTANTS ─────────────────────────────────────────────────────────
 const COMPANY = {
   name: "Jabiru Ventures",
@@ -353,6 +357,9 @@ async function uploadPdfToStorage(
         apikey: SB_SERVICE_ROLE_KEY,
         Authorization: `Bearer ${SB_SERVICE_ROLE_KEY}`,
         "Content-Type": "application/pdf",
+        // Re-sending the same milestone should replace the old PDF rather
+        // than 409 and silently leave the owner without a share link.
+        "x-upsert": "true",
       },
       body: pdfBytes,
     }
@@ -363,7 +370,29 @@ async function uploadPdfToStorage(
     throw new Error(`Failed to upload PDF to storage: ${err}`);
   }
 
-  return `${SB_URL}/storage/v1/object/public/invoices/${fileName}`;
+  // The bucket is PRIVATE (invoices contain the client's name, address,
+  // amounts and our bank details, and filenames are guessable). Hand back a
+  // time-limited signed link instead of a public URL.
+  const signRes = await fetch(
+    `${SB_URL}/storage/v1/object/sign/invoices/${fileName}`,
+    {
+      method: "POST",
+      headers: {
+        apikey: SB_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SB_SERVICE_ROLE_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ expiresIn: SIGNED_URL_TTL_SECONDS }),
+    }
+  );
+
+  if (!signRes.ok) {
+    const err = await signRes.text();
+    throw new Error(`Failed to sign PDF URL: ${err}`);
+  }
+
+  const signed = await signRes.json();
+  return `${SB_URL}/storage/v1${signed.signedURL || signed.signedUrl}`;
 }
 
 /**
@@ -414,6 +443,28 @@ async function sendInvoiceEmail(
   await client.close();
 }
 
+/**
+ * Require a signed-in CRM user. The anon/publishable key is public (it ships
+ * in the page source), so it must NOT be enough to invoke this function —
+ * otherwise anyone could send invoices to real customers. We verify the
+ * caller's token against Supabase Auth and require a real user.
+ */
+async function requireUser(req: Request): Promise<boolean> {
+  const authHeader = req.headers.get("Authorization") || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!token || token === Deno.env.get("SB_ANON_KEY")) return false;
+  try {
+    const res = await fetch(`${SB_URL}/auth/v1/user`, {
+      headers: { apikey: SB_SERVICE_ROLE_KEY, Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return false;
+    const user = await res.json();
+    return Boolean(user?.id);
+  } catch (_e) {
+    return false;
+  }
+}
+
 // ── MAIN HANDLER ──────────────────────────────────────────────────────────────
 
 serve(async (req: Request) => {
@@ -424,6 +475,15 @@ serve(async (req: Request) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405, headers: corsHeaders });
   }
+
+  if (!(await requireUser(req))) {
+    console.warn("[Jabiru] \u274C Rejected unauthenticated call");
+    return new Response(
+      JSON.stringify({ error: "Unauthorized - please sign in" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
 
   // ── Parse request body ───────────────────────────────────────────────────
   let body: any;

@@ -284,6 +284,53 @@ const SUPABASE_URL      = 'https://siglqixiefvrxfvpxttj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_3LA7_L8nCwysXKAI7-0Faw_v6m7iTL_';
 const CLAUDE_API_KEY    = 'YOUR_CLAUDE_API_KEY';
 
+// ── SAFETY HELPERS ────────────────────────────────────────────────────
+// Customer data arrives from a public web form, so it must never be
+// dropped into innerHTML unescaped.
+function esc(v){
+  return String(v==null?'':v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+// Strip a phone down to digits/+ so it can't break out of an HTML attribute.
+function phoneAttr(p){ return String(p==null?'':p).replace(/[^\d+]/g,''); }
+// Normalise to an international number for wa.me links.
+// 0123456789 -> 60123456789 (MY local); 6588870678 already has a country
+// code and is left alone; anything else passes through digits-only.
+function waNumber(p){
+  const d = String(p==null?'':p).replace(/[^\d]/g,'');
+  if(!d) return '';
+  if(d.startsWith('60') || d.startsWith('65')) return d;
+  if(d.startsWith('0'))  return '60' + d.slice(1);
+  return d;
+}
+
+
+// ── AUTH (session-based) ──────────────────────────────────────────────
+// Every DB request below is sent with the logged-in user's access token,
+// never the public anon key — the anon role has no table access at all.
+const { createClient } = supabase;
+const sbAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let _authTok = null;
+
+function gotoLogin(){
+  window.location.href = 'login.html?redirect=' + encodeURIComponent(location.pathname + location.search);
+}
+
+async function requireAuth(){
+  try{
+    const { data:{ session } } = await sbAuth.auth.getSession();
+    if(!session){ gotoLogin(); return false; }
+    _authTok = session.access_token;
+    return true;
+  }catch(e){
+    gotoLogin();   // fail closed: no session proof, no access
+    return false;
+  }
+}
+
+function authHeaders(extra){
+  return Object.assign({ 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + _authTok }, extra || {});
+}
+
 const SECTIONS = [
   { id:'summary',         label:'Summary',          icon:'📋' },
   { id:'executive',       label:'Executive',         icon:'📊' },
@@ -352,7 +399,8 @@ Minor defects throughout the property include paint deterioration, hairline crac
   }
 };
 
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
+  if(!await requireAuth()) return;   // no data work until the session is proven
   loadReport();
   renderTabs();
   showSection('summary');
@@ -382,7 +430,7 @@ async function loadPickerInspections() {
   const listEl = document.getElementById('ip-list');
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/inspections?select=*,jobs(*,customers(*),properties(*))&order=inspected_at.desc`, {
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+      headers: authHeaders()
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     _pickerInspections = await r.json();
@@ -411,9 +459,9 @@ function renderInspPickerList() {
     return `
       <button class="ip-item" onclick="selectPickerInspection('${i.id}')">
         <div class="ip-main">
-          <div class="ip-name">${i.jobs?.customers?.full_name || 'Unnamed client'}</div>
-          <div class="ip-sub">${i.jobs?.properties?.address || 'No address'}</div>
-          <div class="ip-sub">${i.jobs?.invoice_no || 'No invoice'} · ${date}</div>
+          <div class="ip-name">${esc(i.jobs?.customers?.full_name || 'Unnamed client')}</div>
+          <div class="ip-sub">${esc(i.jobs?.properties?.address || 'No address')}</div>
+          <div class="ip-sub">${esc(i.jobs?.invoice_no || 'No invoice')} · ${esc(date)}</div>
         </div>
         <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
           <div class="ip-score">${i.inspection_score ?? '—'}${i.inspection_score != null ? '%' : ''}</div>
@@ -437,7 +485,7 @@ function showDevBanner(){
 async function fetchReport(id) {
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/inspections?id=eq.${id}&select=*,jobs(*, customers(*), properties(*))`, {
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+      headers: authHeaders()
     });
     const data = await r.json();
     if (data[0]) {
@@ -882,13 +930,13 @@ async function sendReport() {
       if (insId) {
         await fetch(`${SUPABASE_URL}/rest/v1/inspections?id=eq.${insId}`, {
           method:'PATCH',
-          headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`,'Content-Type':'application/json'},
+          headers: authHeaders({'Content-Type':'application/json'}),
           body: JSON.stringify({ report_approved:true, report_sent:true, report_draft: JSON.stringify(reportData.sections) })
         });
         if (reportData?.job?.invoice_no) {
           await fetch(`${SUPABASE_URL}/rest/v1/jobs?invoice_no=eq.${reportData.job.invoice_no}`, {
             method:'PATCH',
-            headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`,'Content-Type':'application/json'},
+            headers: authHeaders({'Content-Type':'application/json'}),
             body: JSON.stringify({ status:'Completed' })
           });
         }
@@ -920,9 +968,7 @@ function printReport() {
 }
 
 // ── AUTH ──────────────────────────────────
-const { createClient } = supabase;
-const sbAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-(async()=>{ try{ const {data:{session}}=await sbAuth.auth.getSession(); if(!session) window.location.href='login.html?redirect='+encodeURIComponent(location.pathname+location.search); }catch(e){} })();
+
 </script>
 
 <!-- PRINT CSS -->

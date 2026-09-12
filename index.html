@@ -90,6 +90,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .pay-settling{background:var(--amber-bg);color:#8A5A0A}
 .pay-unpaid{background:var(--red-bg);color:#A02020}
 .pill-lead{background:#EEF2F7;color:#456B8C}
+.pill-lost{background:var(--red-bg);color:#A02020}
 .pill-won{background:var(--green-bg);color:#0A7A4C}
 .pill-booked{background:var(--blue-light);color:var(--blue-dark)}
 .pill-inspected{background:var(--amber-bg);color:#8A5A0A}
@@ -206,7 +207,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       <select class="fselect" id="f-race" onchange="applyFilters()"><option value="">All races</option><option>Malay</option><option>Chinese</option><option>Indian</option><option>Others</option></select>
       <select class="fselect" id="f-city" onchange="applyFilters()"><option value="">All cities</option></select>
       <select class="fselect" id="f-value" onchange="applyFilters()"><option value="">All values</option><option value="0-500">Below RM500</option><option value="500-1000">RM500–1,000</option><option value="1000-2000">RM1,000–2,000</option><option value="2000+">Above RM2,000</option></select>
-      <select class="fselect" id="f-status" onchange="applyFilters()"><option value="">All statuses</option><option>Lead</option><option>Won</option><option>Booked</option><option>Inspected</option><option>Completed</option></select>
+      <select class="fselect" id="f-status" onchange="applyFilters()"><option value="">All statuses</option><option>Lead</option><option>Won</option><option>Booked</option><option>Inspected</option><option>Completed</option><option>Lost</option></select>
       <select class="fselect" id="f-sort" onchange="applyFilters()"><option value="new">Newest first</option><option value="old">Oldest first</option></select>
       <button class="fselect" style="background:var(--red-bg);color:#A02020;border-color:#F0C2C2" onclick="clearAllFilters()">✕ Clear filters</button>
     </div>
@@ -323,27 +324,30 @@ const KANCOLS=[
   {key:'Booked',color:'#0C5499',bg:'#EBF4FD'},
   {key:'Inspected',color:'#8A5A0A',bg:'#FDF2DC'},
   {key:'Completed',color:'#4A35A0',bg:'#EEEBFC'},
+  {key:'Lost',color:'#A02020',bg:'#FDEAEA'},
 ];
 
 let _authTok=null;
-const sb={
-  _tok(){ return _authTok||SUPABASE_ANON_KEY; },
-  async q(t,p={}){
-    const tok=this._tok();
-    let url=`${SUPABASE_URL}/rest/v1/${t}?`;
-    const q=[];
-    if(p.select)q.push(`select=${p.select}`);
-    if(p.order)q.push(`order=${p.order}`);
-    url+=q.join('&');
-    const r=await fetch(url,{headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${tok}`}});
-    return r.json();
-  },
-  async ins(t,d){
-    const tok=this._tok();
-    const r=await fetch(`${SUPABASE_URL}/rest/v1/${t}`,{method:'POST',headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${tok}`,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(d)});
-    return r.json();
-  }
-};
+
+// ── SAFETY HELPERS ────────────────────────────────────────────────────
+// Customer data arrives from a public web form, so it must never be
+// dropped into innerHTML unescaped.
+function esc(v){
+  return String(v==null?'':v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+// Strip a phone down to digits/+ so it can't break out of an HTML attribute.
+function phoneAttr(p){ return String(p==null?'':p).replace(/[^\d+]/g,''); }
+// Normalise to an international number for wa.me links.
+// 0123456789 -> 60123456789 (MY local); 6588870678 already has a country
+// code and is left alone; anything else passes through digits-only.
+function waNumber(p){
+  const d = String(p==null?'':p).replace(/[^\d]/g,'');
+  if(!d) return '';
+  if(d.startsWith('60') || d.startsWith('65')) return d;
+  if(d.startsWith('0'))  return '60' + d.slice(1);
+  return d;
+}
+
 
 let allData=[],filtered=[];
 
@@ -358,7 +362,7 @@ async function loadData(){
     if(cr.error)throw cr.error;
     const customers=cr.data||[],properties=pr.data||[],jobs=jr.data||[],invoices=ir.data||[];
     jobs.forEach(j=>{j.invoices=invoices.filter(i=>i.job_id===j.id);});
-    allData=customers.map(c=>({...c,properties:properties.filter(p=>p.customer_id===c.id),latestJob:jobs.filter(j=>j.customer_id===c.id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))[0]||null}));
+    allData=customers.map(c=>{const mine=jobs.filter(j=>j.customer_id===c.id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));return{...c,properties:properties.filter(p=>p.customer_id===c.id),jobs:mine,latestJob:mine[0]||null};});
     init();
   }catch(e){
     showToast('Failed to load data: '+(e.message||'connection error'));
@@ -426,8 +430,8 @@ function applyFilters(){
 }
 
 function avatarColors(race){return{Malay:['#D4EDDF','#0A5C35'],Chinese:['#FDDEDE','#8A1A1A'],Indian:['#FEF0D4','#7A4A08'],Others:['#E3EDF5','#2F5A7A']}[race]||['#E3EDF5','#2F5A7A'];}
-function pillClass(s){return{Lead:'pill-lead',Won:'pill-won',Booked:'pill-booked',Inspected:'pill-inspected',Completed:'pill-completed',Cancelled:'pill-cancelled'}[s]||'pill-lead';}
-function tagClass(type,val){if(type==='race')return`tag-${(val||'others').toLowerCase()}`;if(type==='prop')return`tag-${(val||'others').toLowerCase()}`;return'tag-gen';}
+function pillClass(s){return{Lead:'pill-lead',Won:'pill-won',Booked:'pill-booked',Inspected:'pill-inspected',Completed:'pill-completed',Lost:'pill-lost',Cancelled:'pill-cancelled'}[s]||'pill-lead';}
+function tagClass(type,val){const safe=String(val||'others').toLowerCase().replace(/[^a-z0-9]/g,'');if(type==='race'||type==='prop')return`tag-${safe||'others'}`;return'tag-gen';}
 function rm(p){return p?`RM${parseFloat(p).toLocaleString('en-MY',{minimumFractionDigits:0})}`:'—';}
 function rmPrecise(p){return `RM${(parseFloat(p)||0).toLocaleString('en-MY',{minimumFractionDigits:2,maximumFractionDigits:2})}`;}
 function paymentStatus(job){
@@ -461,8 +465,8 @@ function renderCards(){
     const status=job.status||'Lead';
     const pay=paymentStatus(job);
     return`<div class="ccard" onclick="openDetail('${d.id}')">
-      <div class="ccard-top"><div class="ccard-left"><div class="avatar" style="background:${bg};color:${fg}">${initials}</div><div><div class="cname">${d.full_name}</div><div class="cphone">${d.phone}</div></div></div><span class="status-pill ${pillClass(status)}">${status}</span></div>
-      <div class="ccard-mid">${d.race?`<span class="tag ${tagClass('race',d.race)}">${d.race}</span>`:''} ${prop.property_type?`<span class="tag ${tagClass('prop',prop.property_type)}">${prop.property_type}</span>`:''} ${prop.city?`<span class="tag tag-gen">📍 ${prop.city}</span>`:''} ${d.lead_source?`<span class="tag tag-gen">${d.lead_source}</span>`:''} ${pay?`<span class="pay-badge ${pay.cls}">${pay.label}</span>`:''}</div>
+      <div class="ccard-top"><div class="ccard-left"><div class="avatar" style="background:${bg};color:${fg}">${esc(initials)}</div><div><div class="cname">${esc(d.full_name)}</div><div class="cphone">${esc(d.phone)}</div></div></div><span class="status-pill ${pillClass(status)}">${status}</span></div>
+      <div class="ccard-mid">${d.race?`<span class="tag ${tagClass('race',d.race)}">${esc(d.race)}</span>`:''} ${prop.property_type?`<span class="tag ${tagClass('prop',prop.property_type)}">${esc(prop.property_type)}</span>`:''} ${prop.city?`<span class="tag tag-gen">📍 ${esc(prop.city)}</span>`:''} ${d.lead_source?`<span class="tag tag-gen">${esc(d.lead_source)}</span>`:''} ${pay?`<span class="pay-badge ${pay.cls}">${pay.label}</span>`:''}</div>
       <div class="ccard-bot"><span class="inv-no">${job.invoice_no||'No invoice'}</span><span class="price">${rm(job.price)}</span></div>
     </div>`;
   }).join('');
@@ -480,10 +484,10 @@ function renderKanban(){
         const [bg,fg]=avatarColors(d.race);
         const pay=paymentStatus(job);
         return`<div class="kcard" draggable="true" ondragstart="onKanbanDragStart(event,'${d.id}')" onclick="openDetail('${d.id}')">
-          <div class="kcard-name">${d.full_name}</div>
+          <div class="kcard-name">${esc(d.full_name)}</div>
           <div class="kcard-prop">🏠 ${prop.property_type||'—'} · ${prop.city||'—'}</div>
           ${pay?`<div style="margin:4px 0"><span class="pay-badge ${pay.cls}">${pay.label}</span></div>`:''}
-          <div class="kcard-bot"><span class="kcard-price">${rm(job.price)}</span>${d.race?`<span class="kcard-tag" style="background:${avatarColors(d.race)[0]};color:${avatarColors(d.race)[1]}">${d.race}</span>`:''}</div>
+          <div class="kcard-bot"><span class="kcard-price">${rm(job.price)}</span>${d.race?`<span class="kcard-tag" style="background:${avatarColors(d.race)[0]};color:${avatarColors(d.race)[1]}">${esc(d.race)}</span>`:''}</div>
         </div>`;
       }).join('')}</div>
     </div>`;
@@ -497,7 +501,7 @@ function renderTable(){
   tbody.innerHTML=filtered.map(d=>{
     const prop=d.properties[0]||{},job=d.latestJob||{};
     const status=job.status||'Lead';
-    return`<tr onclick="openDetail('${d.id}')"><td><div class="td-name">${d.full_name}</div><div class="td-phone">${d.phone}</div></td><td>${d.race?`<span class="tag ${tagClass('race',d.race)}">${d.race}</span>`:'—'}</td><td>${prop.property_type?`<span class="tag ${tagClass('prop',prop.property_type)}">${prop.property_type}</span>`:'—'}</td><td style="color:var(--text2);font-size:12px">${prop.city||'—'}</td><td><span class="status-pill ${pillClass(status)}">${status}</span></td><td class="td-price">${rm(job.price)}</td><td style="color:var(--text2);font-size:11px">${d.lead_source||'—'}</td></tr>`;
+    return`<tr onclick="openDetail('${d.id}')"><td><div class="td-name">${esc(d.full_name)}</div><div class="td-phone">${esc(d.phone)}</div></td><td>${d.race?`<span class="tag ${tagClass('race',d.race)}">${esc(d.race)}</span>`:'—'}</td><td>${prop.property_type?`<span class="tag ${tagClass('prop',prop.property_type)}">${esc(prop.property_type)}</span>`:'—'}</td><td style="color:var(--text2);font-size:12px">${esc(prop.city||'—')}</td><td><span class="status-pill ${pillClass(status)}">${status}</span></td><td class="td-price">${rm(job.price)}</td><td style="color:var(--text2);font-size:11px">${esc(d.lead_source||'—')}</td></tr>`;
   }).join('');
 }
 
@@ -529,20 +533,25 @@ function openDetail(id){
   document.getElementById('detail-content').innerHTML=`
     <div class="modal-drag"></div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
-      <div class="avatar" style="width:48px;height:48px;font-size:16px;font-weight:700;background:${bg};color:${fg}">${initials}</div>
-      <div><div style="font-size:16px;font-weight:700;color:var(--text)">${d.full_name}</div><div style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace">${d.phone}</div></div>
+      <div class="avatar" style="width:48px;height:48px;font-size:16px;font-weight:700;background:${bg};color:${fg}">${esc(initials)}</div>
+      <div><div style="font-size:16px;font-weight:700;color:var(--text)">${esc(d.full_name)}</div><div style="font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace">${esc(d.phone)}</div></div>
       <span class="status-pill ${pillClass(status)}" style="margin-left:auto">${status}</span>
     </div>
-    <div style="margin-bottom:16px"><div class="dhead">Customer</div>${d.email?dr('Email',d.email):''}${d.race?dr('Race',d.race):''}${d.lead_source?dr('Source',d.lead_source):''}</div>
-    <div style="margin-bottom:16px"><div class="dhead">Property</div>${prop.address?dr('Address',prop.address):''}${prop.city?dr('Location',`${prop.city}, ${prop.state||''}`):''}${prop.property_type?dr('Type',prop.property_type):''}${prop.developer?dr('Developer',prop.developer):''}</div>
-    ${job.status?`<div style="margin-bottom:16px"><div class="dhead">Job</div>${dr('Status',`<span class="status-pill ${pillClass(job.status)}">${job.status}</span>`)}${job.invoice_no?dr('Invoice',job.invoice_no):''}${job.price?dr('Price',`<strong style="color:var(--blue);font-family:'JetBrains Mono',monospace">${rm(job.price)}</strong>`):''}${job.inspection_date?dr('Date',job.inspection_date):''}${job.report_recipient?dr('Report to',job.report_recipient):''}</div>`:''}
-    ${job.id?`<div style="margin-bottom:16px"><div class="dhead">Invoices</div><div style="display:grid;gap:6px;margin-top:10px"><button class="abtn" style="background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid);grid-column:1/-1" onclick="sendInvoice('${job.id}','deposit','${d.phone}',${job.price||'null'})">📄 Send Deposit Invoice (50%)</button><button class="abtn" style="background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid);grid-column:1/-1" onclick="sendInvoice('${job.id}','completion','${d.phone}',${job.price||'null'})">📄 Send Completion Invoice (30%)</button><button class="abtn" style="background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid);grid-column:1/-1" onclick="sendInvoice('${job.id}','final','${d.phone}',${job.price||'null'})">📄 Send Final Invoice (20%)</button></div></div>`:''}
+    <div style="margin-bottom:16px"><div class="dhead">Customer</div>${d.email?dr('Email',esc(d.email)):''}${d.race?dr('Race',esc(d.race)):''}${d.lead_source?dr('Source',esc(d.lead_source)):''}</div>
+    <div style="margin-bottom:16px"><div class="dhead">Property</div>${prop.address?dr('Address',esc(prop.address)):''}${prop.city?dr('Location',esc(`${prop.city}, ${prop.state||''}`)):''}${prop.property_type?dr('Type',esc(prop.property_type)):''}${prop.developer?dr('Developer',esc(prop.developer)):''}</div>
+    ${job.notes?`<div style="margin-bottom:16px"><div class="dhead">Enquiry / Notes</div><div style="font-size:12px;color:var(--text);line-height:1.6;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;margin-top:8px;white-space:pre-wrap">${esc(job.notes)}</div></div>`:''}
+    ${(d.jobs&&d.jobs.length>1)?`<div style="margin-bottom:16px"><div class="dhead">Job history (${d.jobs.length})</div><div style="margin-top:8px">${d.jobs.map(jj=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px"><div><div style="font-weight:600;color:var(--text)">${esc(jj.invoice_no||'No invoice')}${jj.id===job.id?' <span style="font-size:9px;color:var(--blue)">(current)</span>':''}</div><div style="font-size:11px;color:var(--text3)">${esc(jj.inspection_date||new Date(jj.created_at).toLocaleDateString())}</div></div><div style="display:flex;align-items:center;gap:6px"><span style="font-family:'JetBrains Mono',monospace;font-weight:700">${rm(jj.price)}</span><span class="status-pill ${pillClass(jj.status)}">${esc(jj.status||'Lead')}</span></div></div>`).join('')}</div></div>`:''}
+    ${job.status?`<div style="margin-bottom:16px"><div class="dhead">Job</div>${dr('Status',`<span class="status-pill ${pillClass(job.status)}">${job.status}</span>`)}${job.invoice_no?dr('Invoice',esc(job.invoice_no)):''}${job.price?dr('Price',`<strong style="color:var(--blue);font-family:'JetBrains Mono',monospace">${rm(job.price)}</strong>`):''}${job.inspection_date?dr('Date',job.inspection_date):''}${job.report_recipient?dr('Report to',esc(job.report_recipient)):''}</div>`:''}
+    ${job.id?`<div style="margin-bottom:16px"><div class="dhead">Invoices</div><div style="display:grid;gap:6px;margin-top:10px"><button class="abtn" style="background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid);grid-column:1/-1" onclick="sendInvoice('${job.id}','deposit','${phoneAttr(d.phone)}',${job.price||'null'})">📄 Send Deposit Invoice (50%)</button><button class="abtn" style="background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid);grid-column:1/-1" onclick="sendInvoice('${job.id}','completion','${phoneAttr(d.phone)}',${job.price||'null'})">📄 Send Completion Invoice (30%)</button><button class="abtn" style="background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid);grid-column:1/-1" onclick="sendInvoice('${job.id}','final','${phoneAttr(d.phone)}',${job.price||'null'})">📄 Send Final Invoice (20%)</button></div></div>`:''}
     ${job.id?`<div style="margin-bottom:16px"><div class="dhead">Payments</div><div id="inv-list-${job.id}" style="margin-top:8px;font-size:12px;color:var(--text2)">Loading…</div></div>`:''}
     <div class="abtns">
-      <button class="abtn" onclick="callClient('${d.phone}')">📞 Call</button>
-      ${d.phone?`<a class="abtn wa" style="text-align:center;text-decoration:none;display:block" href="https://wa.me/60${d.phone.replace(/^0/,'')}" target="_blank" rel="noopener">💬 WhatsApp</a>`:`<button class="abtn wa" onclick="showToast('No phone number on file for this client')">💬 WhatsApp</button>`}
+      <button class="abtn" onclick="callClient('${phoneAttr(d.phone)}')">📞 Call</button>
+      ${d.phone?`<a class="abtn wa" style="text-align:center;text-decoration:none;display:block" href="https://wa.me/${waNumber(d.phone)}" target="_blank" rel="noopener">💬 WhatsApp</a>`:`<button class="abtn wa" onclick="showToast('No phone number on file for this client')">💬 WhatsApp</button>`}
       <button class="abtn primary" onclick="cycleStatus('${id}')">⟳ Next status</button>
       <button class="abtn" onclick="closeModal('detail-modal')">✕ Close</button>
+      ${job.id?(status==='Lost'
+        ? `<button class="abtn" style="grid-column:1/-1;background:var(--bg3)" onclick="reopenJob('${id}')">↩ Reopen as Lead</button>`
+        : (status==='Completed' ? '' : `<button class="abtn" style="grid-column:1/-1;background:var(--red-bg);color:#A02020;border-color:#F0C2C2" onclick="markJobLost('${id}')">✕ Mark as Lost</button>`)):''}
       ${job.id?`<a class="abtn" style="grid-column:1/-1;text-align:center;text-decoration:none;display:block;background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid)" href="checklist.html?job=${job.id}">📋 Start Inspection</a>`:''}
       <button class="abtn" id="del-client-btn" style="grid-column:1/-1;background:var(--red-bg);color:#A02020;border-color:#F0C2C2" onclick="removeClient(this,'${id}')">🗑 Delete Client</button>
     </div>`;
@@ -561,8 +570,8 @@ async function loadInvoicesForJob(jobId){
   const rows=data.map(inv=>`
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
       <div>
-        <div style="font-weight:600;color:var(--text);font-size:12px">${inv.invoice_ref}</div>
-        <div style="font-size:11px;color:var(--text3)">${inv.milestone.charAt(0).toUpperCase()+inv.milestone.slice(1)} · ${new Date(inv.sent_at).toLocaleDateString()}</div>
+        <div style="font-weight:600;color:var(--text);font-size:12px">${esc(inv.invoice_ref)}</div>
+        <div style="font-size:11px;color:var(--text3)">${esc(inv.milestone.charAt(0).toUpperCase()+inv.milestone.slice(1))} · ${new Date(inv.sent_at).toLocaleDateString()}</div>
       </div>
       <div style="display:flex;align-items:center;gap:6px">
         <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px">${rmPrecise(inv.amount)}</span>
@@ -668,8 +677,24 @@ async function setJobStatus(customerId, newStatus){
 
 async function cycleStatus(id){
   const d=allData.find(x=>x.id===id);if(!d||!d.latestJob)return;
-  const next=STATUSES[(STATUSES.indexOf(d.latestJob.status)+1)%STATUSES.length];
+  const cur=d.latestJob.status;
+  // Completed and Lost are terminal - never wrap a finished job back to Lead.
+  if(cur==='Completed'||cur==='Lost'){ showToast(`Already ${cur}`); return; }
+  const i=STATUSES.indexOf(cur);
+  const next=STATUSES[Math.min(i+1, STATUSES.length-1)];
   await setJobStatus(id, next);
+  closeModal('detail-modal');
+}
+
+async function markJobLost(id){
+  const d=allData.find(x=>x.id===id);if(!d||!d.latestJob)return;
+  await setJobStatus(id, 'Lost');
+  closeModal('detail-modal');
+}
+
+async function reopenJob(id){
+  const d=allData.find(x=>x.id===id);if(!d||!d.latestJob)return;
+  await setJobStatus(id, 'Lead');
   closeModal('detail-modal');
 }
 
@@ -751,7 +776,13 @@ function sendInvoice(jobId, milestone, phone, jobPrice){
   document.getElementById('inv-modal-sub').textContent = suggested
     ? `Suggested: ${Math.round(INV_PCTS[milestone]*100)}% of RM${(+jobPrice).toFixed(2)} — edit if needed`
     : 'No price on file for this job — enter the amount manually';
-  document.getElementById('inv-modal-error').textContent='';
+  // Warn if this milestone was already invoiced - stops the accidental
+  // duplicate sends that inflate "Outstanding".
+  const job=(allData.find(x=>x.latestJob&&x.latestJob.id===jobId)||{}).latestJob;
+  const dupes=(job&&job.invoices||[]).filter(i=>i.milestone===milestone);
+  document.getElementById('inv-modal-error').textContent = dupes.length
+    ? `⚠️ ${INV_LABELS[milestone]} was already invoiced${dupes.some(i=>i.paid)?' and marked paid':''}. Sending again will replace the previous PDF.`
+    : '';
   const amtEl=document.getElementById('inv-amount');
   amtEl.value = suggested ?? '';
   document.getElementById('inv-step-amount').style.display='block';
@@ -771,10 +802,9 @@ async function confirmSendInvoice(){
   const btn=document.getElementById('inv-send-btn');
   btn.disabled=true;btn.textContent='Generating…';
   try{
-    const tok=_authTok||SUPABASE_ANON_KEY;
     const res=await fetch(`${SUPABASE_URL}/functions/v1/invoice-generator`,{
       method:'POST',
-      headers:{'Authorization':`Bearer ${tok}`,'Content-Type':'application/json'},
+      headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${_authTok}`,'Content-Type':'application/json'},
       body:JSON.stringify({job_id:jobId,milestone,amount})
     });
     const data=await res.json();
@@ -784,7 +814,7 @@ async function confirmSendInvoice(){
     const waBtn=document.getElementById('inv-wa-btn');
     if(data.pdf_url && phone){
       const msg=`Hi, here's your invoice ${data.invoice_ref} (${INV_LABELS[milestone]}): ${data.pdf_url}`;
-      waBtn.href=`https://wa.me/60${phone.replace(/^0/,'')}?text=${encodeURIComponent(msg)}`;
+      waBtn.href=`https://wa.me/${waNumber(phone)}?text=${encodeURIComponent(msg)}`;
       waBtn.style.display='block';
     }else{
       waBtn.style.display='none';
@@ -808,7 +838,11 @@ async function checkAuth() {
     if (!session) { window.location.href = 'login.html?redirect=' + encodeURIComponent(location.pathname + location.search); return false; }
     _authTok = session.access_token;
     return true;
-  } catch(e) { return true; }
+  } catch(e) {
+    // Fail closed: if we can't prove a session, don't show the CRM.
+    window.location.href = 'login.html?redirect=' + encodeURIComponent(location.pathname + location.search);
+    return false;
+  }
 }
 
 async function logout() {

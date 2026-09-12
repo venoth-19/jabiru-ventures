@@ -153,6 +153,28 @@ async function saveReportDraft(jobId: string, reportDraftJson: string): Promise<
   }
 }
 
+/**
+ * Require a signed-in CRM user. The anon/publishable key is public (it ships
+ * in the page source), so it must NOT be enough to invoke this function —
+ * otherwise anyone could send invoices to real customers. We verify the
+ * caller's token against Supabase Auth and require a real user.
+ */
+async function requireUser(req: Request): Promise<boolean> {
+  const authHeader = req.headers.get("Authorization") || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!token || token === Deno.env.get("SB_ANON_KEY")) return false;
+  try {
+    const res = await fetch(`${SB_URL}/auth/v1/user`, {
+      headers: { apikey: SB_SERVICE_ROLE_KEY, Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return false;
+    const user = await res.json();
+    return Boolean(user?.id);
+  } catch (_e) {
+    return false;
+  }
+}
+
 // ── MAIN HANDLER ──────────────────────────────────────────────────────────────
 
 serve(async (req: Request) => {
@@ -163,6 +185,15 @@ serve(async (req: Request) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405, headers: corsHeaders });
   }
+
+  if (!(await requireUser(req))) {
+    console.warn("[Jabiru] \u274C Rejected unauthenticated call");
+    return new Response(
+      JSON.stringify({ error: "Unauthorized - please sign in" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
 
   // ── Parse request body ───────────────────────────────────────────────────
   let body: any;

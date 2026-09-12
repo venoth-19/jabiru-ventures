@@ -30,6 +30,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .logo-text .name{font-size:14px;font-weight:700;color:#fff;letter-spacing:-.2px}
 .logo-text .sub{font-size:10px;color:var(--blue-mid);letter-spacing:.3px;text-transform:uppercase}
 .add-btn{background:var(--cyan);color:#fff;border:none;padding:7px 14px;border-radius:var(--r-sm);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;transition:all .15s;box-shadow:0 2px 8px rgba(26,181,212,.35)}
+.profile-btn{width:34px;height:34px;flex-shrink:0;border-radius:50%;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.profile-btn:hover{background:rgba(255,255,255,.28)}
 .add-btn:hover{background:#14a8c4;transform:translateY(-1px)}
 .add-btn:active{transform:scale(.97)}
 
@@ -174,7 +176,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       <div class="sub">CRM · Internal</div>
     </div>
   </div>
-  <button class="add-btn" onclick="openAdd()">＋ Add client</button>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button class="add-btn" onclick="openAdd()">＋ Add client</button>
+    <button class="profile-btn" onclick="openProfile()" title="Profile">👤</button>
+  </div>
 </div>
 
 <div class="nav-tabs">
@@ -277,6 +282,29 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       <a class="sbtn" id="inv-wa-btn" target="_blank" rel="noopener" style="display:none;box-sizing:border-box;background:var(--green,#1DA851);color:#fff;text-decoration:none">💬 Open WhatsApp to share</a>
       <button class="cbtn" onclick="closeModal('invoice-modal')">Done</button>
     </div>
+  </div>
+</div>
+
+<div class="overlay" id="profile-modal" onclick="closeOnOverlay(event,'profile-modal')">
+  <div class="modal">
+    <div class="modal-drag"></div>
+    <div class="modal-title">Your Profile</div>
+
+    <div class="fg"><label class="fl">Email</label><input class="fi" id="prof-email" type="email" disabled style="opacity:.6"></div>
+    <div class="fg"><label class="fl">Display name</label><input class="fi" id="prof-name" placeholder="Your name" type="text"></div>
+    <button class="sbtn" onclick="saveProfileName()">Save name</button>
+
+    <div class="form-sec">Change Password</div>
+    <div class="fg"><label class="fl">New password</label><input class="fi" id="prof-newpw" placeholder="At least 6 characters" type="password"></div>
+    <div class="fg"><label class="fl">Confirm new password</label><input class="fi" id="prof-confirmpw" placeholder="Repeat password" type="password"></div>
+    <button class="sbtn" onclick="saveProfilePassword()">Update password</button>
+
+    <div style="font-size:11px;color:#D93535;min-height:16px;margin-top:10px" id="prof-error"></div>
+    <div style="font-size:11px;color:#0EA86A;min-height:16px" id="prof-success"></div>
+
+    <div class="form-sec">Session</div>
+    <button class="abtn" style="background:var(--red-bg);color:#A02020;border-color:#F0C2C2;width:100%" onclick="logout()">🚪 Log out</button>
+    <button class="cbtn" onclick="closeModal('profile-modal')">Close</button>
   </div>
 </div>
 
@@ -786,6 +814,40 @@ async function checkAuth() {
 async function logout() {
   await sbAuth.auth.signOut();
   window.location.href = 'login.html';
+}
+
+async function openProfile(){
+  document.getElementById('prof-error').textContent='';
+  document.getElementById('prof-success').textContent='';
+  document.getElementById('prof-newpw').value='';
+  document.getElementById('prof-confirmpw').value='';
+  const {data:{user}}=await sbAuth.auth.getUser();
+  document.getElementById('prof-email').value=user?.email||'';
+  document.getElementById('prof-name').value=user?.user_metadata?.full_name||'';
+  document.getElementById('profile-modal').classList.add('open');
+}
+
+async function saveProfileName(){
+  const name=document.getElementById('prof-name').value.trim();
+  const errEl=document.getElementById('prof-error'),okEl=document.getElementById('prof-success');
+  errEl.textContent='';okEl.textContent='';
+  const {error}=await sbAuth.auth.updateUser({data:{full_name:name}});
+  if(error){errEl.textContent='Failed: '+error.message;return;}
+  okEl.textContent='Name updated ✓';
+}
+
+async function saveProfilePassword(){
+  const pw=document.getElementById('prof-newpw').value;
+  const confirm=document.getElementById('prof-confirmpw').value;
+  const errEl=document.getElementById('prof-error'),okEl=document.getElementById('prof-success');
+  errEl.textContent='';okEl.textContent='';
+  if(!pw||pw.length<6){errEl.textContent='Password must be at least 6 characters';return;}
+  if(pw!==confirm){errEl.textContent='Passwords do not match';return;}
+  const {error}=await sbAuth.auth.updateUser({password:pw});
+  if(error){errEl.textContent='Failed: '+error.message;return;}
+  okEl.textContent='Password updated ✓';
+  document.getElementById('prof-newpw').value='';
+  document.getElementById('prof-confirmpw').value='';
 }
 
 checkAuth().then(ok => { if(ok) loadData(); });

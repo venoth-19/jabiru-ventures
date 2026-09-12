@@ -818,12 +818,16 @@ async function logout() {
 async function openProfile(){
   document.getElementById('prof-error').textContent='';
   document.getElementById('prof-success').textContent='';
-  document.getElementById('prof-newpw').value='';
-  document.getElementById('prof-confirmpw').value='';
-  const {data:{user}}=await sbAuth.auth.getUser();
-  document.getElementById('prof-email').value=user?.email||'';
-  document.getElementById('prof-name').value=user?.user_metadata?.full_name||'';
+  // Open first, populate after — so a slow/failed getUser() can't stop the
+  // modal from appearing at all.
   document.getElementById('profile-modal').classList.add('open');
+  try{
+    const {data:{user}}=await sbAuth.auth.getUser();
+    document.getElementById('prof-email').value=user?.email||'';
+    document.getElementById('prof-name').value=user?.user_metadata?.full_name||'';
+  }catch(e){
+    document.getElementById('prof-error').textContent='Could not load your profile details';
+  }
 }
 
 async function saveProfileName(){

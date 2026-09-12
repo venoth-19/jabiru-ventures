@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Jabiru Ventures — Coming Soon</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#1477C6;--blue-dark:#0C5499;--blue-deeper:#093D72;
+  --blue-light:#EBF4FD;--blue-mid:#B8D8F5;--cyan:#1AB5D4;
+  --bg:#F2F6FA;--bg2:#FFFFFF;--bg3:#EBF1F7;
+  --border:#A9C6DE;--text:#0C2340;--text2:#456B8C;--text3:#8AADC6;
+  --amber:#D4820A;--amber-bg:#FDF2DC;--amber-dark:#8A5A0A;
+  --shadow:0 4px 24px rgba(12,35,64,.12);
+  --r:14px;--r-sm:9px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:80px}
+
+.header{background:var(--blue-deeper);height:54px;padding:0 20px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(9,61,114,.4)}
+.logo-mark{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--cyan),var(--blue));display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff}
+.logo-name{font-size:14px;font-weight:700;color:#fff}
+.logo-sub{font-size:10px;color:var(--blue-mid);text-transform:uppercase;letter-spacing:.4px}
+
+.wrap{display:flex;align-items:center;justify-content:center;padding:40px 20px}
+.card{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r);padding:36px 28px;max-width:440px;width:100%;text-align:center;box-shadow:var(--shadow)}
+.icon{font-size:56px;margin-bottom:16px;line-height:1}
+.title{font-size:20px;font-weight:800;color:var(--text);margin-bottom:8px}
+.sub{font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:22px}
+.note{background:var(--amber-bg);border:1px solid var(--amber);border-radius:var(--r-sm);padding:12px 14px;font-size:12px;color:var(--amber-dark);line-height:1.6;text-align:left;margin-bottom:22px}
+.btn{display:block;width:100%;background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;border:none;border-radius:var(--r-sm);padding:13px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:none;box-shadow:0 4px 14px rgba(20,119,198,.3)}
+
+.app-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);display:flex;z-index:200;box-shadow:0 -2px 12px rgba(12,35,64,.08)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 4px 10px;text-decoration:none;color:#456B8C;transition:color .15s;gap:2px}
+.nav-item.active{color:#1477C6}
+.nav-icon{font-size:20px;line-height:1}
+.nav-label{font-size:10px;font-weight:600;letter-spacing:.2px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-mark">JV</div>
+  <div>
+    <div class="logo-name">Jabiru Ventures</div>
+    <div class="logo-sub">Reports</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <div class="icon">🚧</div>
+    <div class="title">This page is under construction</div>
+    <div class="sub">The reports section isn't ready yet. We're still building out how inspection reports get generated and delivered.</div>
+    <div class="note"><strong>What's coming:</strong> automatic report drafting from submitted checklists, review and editing before sending, and a proper report format for both standard and court-case reports.</div>
+    <a class="btn" href="index.html">← Back to CRM</a>
+  </div>
+</div>
+
+<nav class="app-nav">
+  <a href="index.html" class="nav-item"><div class="nav-icon">👥</div><div class="nav-label">CRM</div></a>
+  <a href="checklist.html" class="nav-item"><div class="nav-icon">📋</div><div class="nav-label">Checklist</div></a>
+  <a href="under-construction.html" class="nav-item active"><div class="nav-icon">📄</div><div class="nav-label">Reports</div></a>
+  <a href="analytics.html" class="nav-item"><div class="nav-icon">📊</div><div class="nav-label">Analytics</div></a>
+</nav>
+
+<script>
+const SUPABASE_URL      = 'https://siglqixiefvrxfvpxttj.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_3LA7_L8nCwysXKAI7-0Faw_v6m7iTL_';
+
+// ── AUTH ──────────────────────────────────
+const { createClient } = supabase;
+const sbAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+(async()=>{ try{ const {data:{session}}=await sbAuth.auth.getSession(); if(!session) window.location.href='login.html?redirect='+encodeURIComponent(location.pathname+location.search); }catch(e){} })();
+</script>
+</body>
+</html>

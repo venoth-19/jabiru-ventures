@@ -164,6 +164,20 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-he
 .sact-secondary{background:var(--bg3);color:var(--text2);border:1px solid var(--border) !important}
 
 /* REGEN LOADING */
+.insp-picker{display:none;position:fixed;inset:0;background:rgba(9,61,114,.55);z-index:650;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(3px)}
+.insp-picker.show{display:flex}
+.insp-picker-card{background:var(--bg2);border-radius:var(--r);padding:20px;width:100%;max-width:460px;box-shadow:var(--shadow-md)}
+.ip-search{width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-family:inherit;font-size:13px;padding:10px 12px;outline:none}
+.ip-search:focus{border-color:var(--blue)}
+.ip-item{width:100%;text-align:left;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:11px 12px;margin-bottom:8px;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:10px}
+.ip-item:hover{border-color:var(--blue);background:var(--blue-light)}
+.ip-main{flex:1;min-width:0}
+.ip-name{font-size:13px;font-weight:700;color:var(--text)}
+.ip-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.ip-score{font-size:14px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--blue);flex-shrink:0}
+.ip-state{font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;text-transform:uppercase;letter-spacing:.3px}
+.ip-sent{background:var(--green-bg);color:#0A7A4C}
+.ip-draft{background:var(--amber-bg);color:var(--amber-dark)}
 .regen-overlay{display:none;position:fixed;inset:0;background:rgba(9,61,114,.7);z-index:400;align-items:center;justify-content:center;flex-direction:column;gap:12px;backdrop-filter:blur(3px)}
 .regen-overlay.show{display:flex}
 .regen-spinner{width:48px;height:48px;border-radius:50%;border:3px solid rgba(255,255,255,.2);border-top-color:var(--cyan);animation:spin 1s linear infinite}
@@ -193,10 +207,20 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);min-he
   </div>
 </div>
 
+<div class="insp-picker" id="insp-picker">
+  <div class="insp-picker-card">
+    <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">Completed inspections</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Select a submitted checklist to build its report.</div>
+    <input class="ip-search" id="ip-search" placeholder="Search client, address or invoice..." oninput="renderInspPickerList()" type="text">
+    <div id="ip-list" style="max-height:52vh;overflow-y:auto;margin-top:10px">Loading inspections…</div>
+  </div>
+</div>
+
 <div class="report-hero">
   <div class="hero-label">Inspection Report</div>
   <div class="hero-title" id="hero-title">Loading report...</div>
   <div class="hero-address" id="hero-address">—</div>
+  <button onclick="openInspPicker()" style="margin-top:10px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:var(--r-sm);font-family:inherit;font-size:11px;font-weight:700;padding:6px 12px;cursor:pointer">📋 Change inspection ▾</button>
   <div class="hero-stats">
     <div class="hstat"><div class="hstat-val" id="hs-score">—</div><div class="hstat-lbl">Score</div></div>
     <div class="hstat"><div class="hstat-val" style="color:#FF6B6B" id="hs-crit">—</div><div class="hstat-lbl">Critical</div></div>
@@ -334,6 +358,8 @@ window.addEventListener('load', () => {
   showSection('summary');
 });
 
+let _pickerInspections = [];
+
 function loadReport() {
   const params = new URLSearchParams(window.location.search);
   const inspectionId = params.get('inspection');
@@ -341,10 +367,66 @@ function loadReport() {
   if (inspectionId && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
     fetchReport(inspectionId);
   } else {
-    reportData = DEMO;
-    updateHero();
-    showDevBanner();
+    // No inspection specified — let the user pick from submitted checklists
+    // instead of silently showing placeholder data.
+    openInspPicker();
   }
+}
+
+function openInspPicker() {
+  document.getElementById('insp-picker').classList.add('show');
+  loadPickerInspections();
+}
+
+async function loadPickerInspections() {
+  const listEl = document.getElementById('ip-list');
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/inspections?select=*,jobs(*,customers(*),properties(*))&order=inspected_at.desc`, {
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    _pickerInspections = await r.json();
+    renderInspPickerList();
+  } catch (e) {
+    listEl.innerHTML = '<div style="font-size:12px;color:var(--red);padding:8px 0">Could not load inspections: ' + (e.message || 'connection error') + '</div>';
+  }
+}
+
+function renderInspPickerList() {
+  const listEl = document.getElementById('ip-list');
+  const q = (document.getElementById('ip-search').value || '').toLowerCase();
+  const items = _pickerInspections.filter(i => {
+    if (!q) return true;
+    const hay = `${i.jobs?.customers?.full_name || ''} ${i.jobs?.properties?.address || ''} ${i.jobs?.properties?.city || ''} ${i.jobs?.invoice_no || ''}`.toLowerCase();
+    return hay.includes(q);
+  });
+  if (!items.length) {
+    listEl.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:8px 0">' +
+      (_pickerInspections.length ? 'No matching inspections.' : 'No checklists have been submitted yet.') + '</div>';
+    return;
+  }
+  listEl.innerHTML = items.map(i => {
+    const sent = i.report_sent;
+    const date = i.inspected_at ? new Date(i.inspected_at).toLocaleDateString() : '—';
+    return `
+      <button class="ip-item" onclick="selectPickerInspection('${i.id}')">
+        <div class="ip-main">
+          <div class="ip-name">${i.jobs?.customers?.full_name || 'Unnamed client'}</div>
+          <div class="ip-sub">${i.jobs?.properties?.address || 'No address'}</div>
+          <div class="ip-sub">${i.jobs?.invoice_no || 'No invoice'} · ${date}</div>
+        </div>
+        <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <div class="ip-score">${i.inspection_score ?? '—'}${i.inspection_score != null ? '%' : ''}</div>
+          <span class="ip-state ${sent ? 'ip-sent' : 'ip-draft'}">${sent ? 'Sent' : 'Draft'}</span>
+        </div>
+      </button>`;
+  }).join('');
+}
+
+function selectPickerInspection(id) {
+  document.getElementById('insp-picker').classList.remove('show');
+  history.replaceState(null, '', `report-review.html?inspection=${id}`);
+  fetchReport(id);
 }
 
 function showDevBanner(){

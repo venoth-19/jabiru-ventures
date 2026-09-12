@@ -543,6 +543,7 @@ function openDetail(id){
       ${d.phone?`<a class="abtn wa" style="text-align:center;text-decoration:none;display:block" href="https://wa.me/60${d.phone.replace(/^0/,'')}" target="_blank" rel="noopener">💬 WhatsApp</a>`:`<button class="abtn wa" onclick="showToast('No phone number on file for this client')">💬 WhatsApp</button>`}
       <button class="abtn primary" onclick="cycleStatus('${id}')">⟳ Next status</button>
       <button class="abtn" onclick="closeModal('detail-modal')">✕ Close</button>
+      ${job.id?`<a class="abtn" style="grid-column:1/-1;text-align:center;text-decoration:none;display:block;background:var(--blue-light);color:var(--blue-dark);border-color:var(--blue-mid)" href="checklist.html?job=${job.id}">📋 Start Inspection</a>`:''}
       <button class="abtn" id="del-client-btn" style="grid-column:1/-1;background:var(--red-bg);color:#A02020;border-color:#F0C2C2" onclick="removeClient(this,'${id}')">🗑 Delete Client</button>
     </div>`;
   document.getElementById('detail-modal').classList.add('open');

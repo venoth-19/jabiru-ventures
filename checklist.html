@@ -204,6 +204,13 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .toast{position:fixed;bottom:140px;left:50%;transform:translateX(-50%);background:var(--blue-deeper);color:#fff;padding:9px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 16px rgba(9,61,114,.3)}
 .toast.show{opacity:1}
 
+.job-picker{display:none;position:fixed;inset:0;background:rgba(9,61,114,.55);z-index:650;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(3px)}
+.job-picker.show{display:flex}
+.job-picker-card{background:var(--bg2);border-radius:var(--r);padding:20px;width:100%;max-width:440px;box-shadow:var(--shadow)}
+.jp-item{width:100%;text-align:left;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-xs);padding:11px 12px;margin-bottom:7px;cursor:pointer;font-family:inherit;transition:all .15s}
+.jp-item:hover{border-color:var(--blue);background:var(--blue-light)}
+.jp-name{font-size:13px;font-weight:700;color:var(--text)}
+.jp-sub{font-size:11px;color:var(--text2);margin-top:2px}
 .annotate-modal{display:none;position:fixed;inset:0;background:rgba(9,61,114,.9);z-index:600;flex-direction:column;padding:16px}
 .annotate-modal.open{display:flex}
 .annotate-header{display:flex;align-items:center;justify-content:space-between;color:#fff;margin-bottom:12px}
@@ -252,11 +259,21 @@ input[type=file]{display:none}
   <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
 </div>
 
+<div class="job-picker" id="job-picker">
+  <div class="job-picker-card">
+    <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">Select a job to inspect</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Choose which client's property you're inspecting.</div>
+    <input class="fi" id="jp-search" placeholder="Search client, address or invoice..." oninput="renderJobPickerList()" type="text">
+    <div id="jp-list" style="max-height:50vh;overflow-y:auto;margin-top:4px">Loading jobs…</div>
+  </div>
+</div>
+
 <div class="job-card">
   <div class="job-card-top">
     <div class="job-title" id="job-address">Loading job...</div>
     <div class="job-inv" id="job-inv">—</div>
   </div>
+  <div style="margin-top:10px"><button onclick="openJobPicker()" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-xs);color:var(--blue);font-family:inherit;font-size:11px;font-weight:700;padding:7px;cursor:pointer">🔄 Change job</button></div>
   <div class="job-meta">
     <div class="meta-item"><div class="meta-lbl">Client</div><div class="meta-val" id="job-client">—</div></div>
     <div class="meta-item"><div class="meta-lbl">Property type</div><div class="meta-val" id="job-type">—</div></div>
@@ -399,6 +416,8 @@ function checkNetwork() {
   }
 }
 
+let _pickerJobs = [];
+
 function loadJobFromURL() {
   const params = new URLSearchParams(window.location.search);
   const jobId = params.get('job');
@@ -406,13 +425,54 @@ function loadJobFromURL() {
     state.jobId = jobId;
     fetchJobData(jobId);
   } else {
-    state.jobData = {
-      invoice_no: 'JV-2025-0004', client: 'Mohd Faizal',
-      address: 'No 12, Jalan Seksyen 7, Shah Alam',
-      property_type: 'Landed', inspection_date: '2025-04-05'
-    };
-    updateJobCard();
+    // No job specified — let the inspector pick one instead of silently
+    // falling back to placeholder data.
+    openJobPicker();
   }
+}
+
+function openJobPicker() {
+  document.getElementById('job-picker').classList.add('show');
+  loadPickerJobs();
+}
+
+async function loadPickerJobs() {
+  const listEl = document.getElementById('jp-list');
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/jobs?select=*,customers(*),properties(*)&order=created_at.desc`, {
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    _pickerJobs = await r.json();
+    renderJobPickerList();
+  } catch (e) {
+    listEl.innerHTML = '<div style="font-size:12px;color:#C0392B;padding:8px 0">Could not load jobs: ' + (e.message || 'connection error') + '</div>';
+  }
+}
+
+function renderJobPickerList() {
+  const listEl = document.getElementById('jp-list');
+  const q = (document.getElementById('jp-search').value || '').toLowerCase();
+  const jobs = _pickerJobs.filter(j => {
+    if (!q) return true;
+    const hay = `${j.customers?.full_name || ''} ${j.properties?.address || ''} ${j.properties?.city || ''} ${j.invoice_no || ''}`.toLowerCase();
+    return hay.includes(q);
+  });
+  if (!jobs.length) { listEl.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:8px 0">No matching jobs.</div>'; return; }
+  listEl.innerHTML = jobs.map(j => `
+    <button class="jp-item" onclick="selectPickerJob('${j.id}')">
+      <div class="jp-name">${j.customers?.full_name || 'Unnamed client'}</div>
+      <div class="jp-sub">${j.properties?.address || 'No address'}${j.properties?.city ? ' · ' + j.properties.city : ''}</div>
+      <div class="jp-sub">${j.invoice_no || 'No invoice'} · ${j.status || 'Lead'}</div>
+    </button>`).join('');
+}
+
+function selectPickerJob(jobId) {
+  state.jobId = jobId;
+  document.getElementById('job-picker').classList.remove('show');
+  // Keep the job in the URL so a refresh (or the post-submit redirect) stays on it
+  history.replaceState(null, '', `checklist.html?job=${jobId}`);
+  fetchJobData(jobId);
 }
 
 async function fetchJobData(jobId) {

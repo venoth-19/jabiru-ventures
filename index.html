@@ -295,9 +295,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
     <button class="sbtn" onclick="saveProfileName()">Save name</button>
 
     <div class="form-sec">Change Password</div>
-    <div class="fg"><label class="fl">New password</label><input class="fi" id="prof-newpw" placeholder="At least 6 characters" type="password"></div>
-    <div class="fg"><label class="fl">Confirm new password</label><input class="fi" id="prof-confirmpw" placeholder="Repeat password" type="password"></div>
-    <button class="sbtn" onclick="saveProfilePassword()">Update password</button>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:10px">For security, we'll email you a link to confirm the change before setting a new password.</div>
+    <button class="sbtn" id="prof-pw-btn" onclick="requestPasswordChange()">📧 Send password change email</button>
 
     <div style="font-size:11px;color:#D93535;min-height:16px;margin-top:10px" id="prof-error"></div>
     <div style="font-size:11px;color:#0EA86A;min-height:16px" id="prof-success"></div>
@@ -836,18 +835,19 @@ async function saveProfileName(){
   okEl.textContent='Name updated ✓';
 }
 
-async function saveProfilePassword(){
-  const pw=document.getElementById('prof-newpw').value;
-  const confirm=document.getElementById('prof-confirmpw').value;
+async function requestPasswordChange(){
   const errEl=document.getElementById('prof-error'),okEl=document.getElementById('prof-success');
+  const btn=document.getElementById('prof-pw-btn');
   errEl.textContent='';okEl.textContent='';
-  if(!pw||pw.length<6){errEl.textContent='Password must be at least 6 characters';return;}
-  if(pw!==confirm){errEl.textContent='Passwords do not match';return;}
-  const {error}=await sbAuth.auth.updateUser({password:pw});
+  const email=document.getElementById('prof-email').value;
+  if(!email)return;
+  btn.disabled=true;btn.textContent='Sending…';
+  const {error}=await sbAuth.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + '/login.html'
+  });
+  btn.disabled=false;btn.textContent='📧 Send password change email';
   if(error){errEl.textContent='Failed: '+error.message;return;}
-  okEl.textContent='Password updated ✓';
-  document.getElementById('prof-newpw').value='';
-  document.getElementById('prof-confirmpw').value='';
+  okEl.textContent=`Check ${email} for a link to set your new password.`;
 }
 
 checkAuth().then(ok => { if(ok) loadData(); });
